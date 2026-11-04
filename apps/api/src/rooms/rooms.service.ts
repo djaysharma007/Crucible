@@ -328,6 +328,26 @@ export class RoomsService {
     });
   }
 
+  issueCollabToken(
+    interviewId: string,
+    participant: { role: 'interviewer' | 'candidate'; displayName: string; userId?: string },
+  ) {
+    const collabSecret =
+      process.env.COLLAB_TOKEN_SECRET ||
+      process.env.ROOM_TOKEN_SECRET ||
+      'dev_collab_token_secret_32_chars';
+
+    const payload = {
+      sub: participant.userId || participant.displayName,
+      interviewId,
+      role: participant.role,
+      displayName: participant.displayName,
+    };
+
+    const token = jwt.sign(payload, collabSecret, { expiresIn: '15m' });
+    return { token, expiresInSeconds: 900 };
+  }
+
   private generateCandidateSessionToken(payload: CandidateSessionJwtPayload): string {
     return jwt.sign(payload, this.roomSecret, { expiresIn: '12h' });
   }

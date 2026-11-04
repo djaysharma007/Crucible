@@ -8,10 +8,12 @@ import { MonacoBinding } from 'y-monaco';
 import { Select, Badge } from '@crucible/ui';
 import { Lock, Unlock, Users } from 'lucide-react';
 import { SupportedLanguage } from '@crucible/shared';
+import { fetchCollabToken } from '@/lib/collab/collab-token';
 
 interface CodeEditorProps {
   documentName: string;
-  authToken: string;
+  interviewId?: string;
+  authToken?: string | (() => Promise<string>);
   userName: string;
   isInterviewer: boolean;
   isLocked: boolean;
@@ -31,6 +33,7 @@ const DEFAULT_STARTER_CODE: Record<SupportedLanguage, string> = {
 
 export function CodeEditor({
   documentName,
+  interviewId,
   authToken,
   userName,
   isInterviewer,
@@ -88,7 +91,7 @@ export function CodeEditor({
       url: collabUrl,
       name: documentName,
       document: ydoc,
-      token: authToken,
+      token: authToken || (interviewId ? async () => fetchCollabToken(interviewId) : 'room_participant'),
       onConnect: () => setSyncStatus('connected'),
       onDisconnect: () => setSyncStatus('disconnected'),
     });

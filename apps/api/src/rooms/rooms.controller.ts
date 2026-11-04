@@ -213,4 +213,43 @@ export class RoomsController {
 
     return this.roomsService.getSignals(id);
   }
+
+  @Post(':id/collab-token')
+  async issueCollabTokenPost(@Param('id') id: string, @Req() req: Request) {
+    return this.handleCollabToken(id, req);
+  }
+
+  @Get(':id/collab-token')
+  async issueCollabTokenGet(@Param('id') id: string, @Req() req: Request) {
+    return this.handleCollabToken(id, req);
+  }
+
+  private async handleCollabToken(id: string, req: Request) {
+    const interviewerCookie = req.cookies?.['crucible_session'];
+    const candidateCookie = req.cookies?.['crucible_candidate_session'];
+
+    if (interviewerCookie) {
+      const user = await this.authService.validateSession(interviewerCookie);
+      if (user) {
+        return this.roomsService.issueCollabToken(id, {
+          role: 'interviewer',
+          userId: user.id,
+          displayName: user.displayName,
+        });
+      }
+    }
+
+    if (candidateCookie) {
+      const candidate = this.roomsService.validateCandidateSession(candidateCookie);
+      if (candidate && candidate.interviewId === id) {
+        return this.roomsService.issueCollabToken(id, {
+          role: 'candidate',
+          userId: candidate.candidateId,
+          displayName: candidate.displayName,
+        });
+      }
+    }
+
+    throw new BadRequestException('Valid interviewer or candidate session required to obtain collaborative token');
+  }
 }

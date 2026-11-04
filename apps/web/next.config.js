@@ -4,6 +4,23 @@ const path = require('path');
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@crucible/ui', '@crucible/shared', '@crucible/config'],
+  async rewrites() {
+    const apiUrl =
+      process.env.API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      'http://localhost:4000/api/v1';
+    const baseApi = apiUrl.replace(/\/api\/v1\/?$/, '');
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: `${baseApi}/api/v1/:path*`,
+      },
+      {
+        source: '/api/:path*',
+        destination: `${baseApi}/api/:path*`,
+      },
+    ];
+  },
   async headers() {
     return [
       {
