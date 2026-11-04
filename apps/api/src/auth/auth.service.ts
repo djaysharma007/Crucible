@@ -11,6 +11,7 @@ import jwt from 'jsonwebtoken';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RedisService } from '../redis/redis.service.js';
+import { BrevoEmailService } from './brevo-email.service.js';
 import {
   RegisterInput,
   LoginInput,
@@ -34,6 +35,7 @@ export class AuthService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(RedisService) private readonly redis: RedisService,
+    @Inject(BrevoEmailService) private readonly emailService: BrevoEmailService,
   ) {}
 
   async register(input: RegisterInput): Promise<{ user: UserSummary; token: string }> {
@@ -130,6 +132,7 @@ export class AuthService {
       // Token expires in 1 hour (3600s)
       await this.redis.set(`reset_token:${resetToken}`, user.id, 3600);
       this.logger.log(`Password reset token generated for ${user.email}: ${resetToken}`);
+      await this.emailService.sendPasswordResetEmail(user.email, resetToken);
     }
 
     return {
