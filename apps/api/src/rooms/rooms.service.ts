@@ -78,7 +78,7 @@ export class RoomsService {
     };
   }
 
-  async getStatus(interviewId: string, candidateId?: string) {
+  async getStatus(interviewId: string, candidateId?: string, isInterviewer = false) {
     const interview = await this.prisma.interview.findUnique({
       where: { id: interviewId },
       include: {
@@ -88,7 +88,13 @@ export class RoomsService {
               include: {
                 languages: true,
                 testCases: {
-                  where: { isHidden: false }, // candidate sees only visible test cases
+                  where: isInterviewer ? undefined : { isHidden: false },
+                  orderBy: { order: 'asc' },
+                },
+                _count: {
+                  select: {
+                    testCases: true,
+                  },
                 },
               },
             },
@@ -110,6 +116,20 @@ export class RoomsService {
       isAdmitted = await this.isCandidateAdmitted(interviewId, candidateId);
     }
 
+    const questions = interview.interviewQuestions.map((iq) => {
+      const visibleCases = iq.question.testCases;
+      const totalCases = iq.question._count.testCases;
+      const hiddenCasesCount = totalCases - visibleCases.length;
+
+      return {
+        ...iq,
+        question: {
+          ...iq.question,
+          hiddenCasesCount,
+        },
+      };
+    });
+
     return {
       interviewId: interview.id,
       status: interview.status,
@@ -118,8 +138,37 @@ export class RoomsService {
       candidateName: interview.candidateName,
       roleTitle: interview.roleTitle,
       startedAt: interview.startedAt?.toISOString() || null,
-      questions: interview.interviewQuestions,
+      questions,
     };
+  }
+
+  async saveWhiteboardSnapshot(
+    interviewId: string,
+    docType: string,
+    snapshotData: string,
+  ) {
+    const interview = await this.prisma.interview.findUnique({
+      where: { id: interviewId },
+    });
+
+    if (!interview) {
+      throw new NotFoundException('Interview room not found');
+    }
+
+    const offsetMs = interview.startedAt
+      ? Math.max(0, Date.now() - interview.startedAt.getTime())
+      : 0;
+
+    const payload = Buffer.from(snapshotData, 'utf-8');
+
+    return this.prisma.collabSnapshot.create({
+      data: {
+        interviewId,
+        docType,
+        payload,
+        offsetMs,
+      },
+    });
   }
 
   async getLobbyCandidates(interviewId: string, user: UserSummary) {

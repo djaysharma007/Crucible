@@ -1,0 +1,28 @@
+services:
+  judge0-server:
+    image: judge0/judge0:1.13.1
+    container_name: crucible_judge0_server
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    ports:
+      - "${JUDGE0_PORT:-2358}:2358"
+    privileged: true
+    restart: unless-stopped
+    networks:
+      - crucible-network
+
+  judge0-workers:
+    image: judge0/judge0:1.13.1
+    container_name: crucible_judge0_workers
+    command: ["./scripts/workers"]
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    restart: unless-stopped
+    networks:
+      - crucible-network
+
+networks:
+  crucible-network:
+    name: crucible-network
+    external: true

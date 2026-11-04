@@ -12,13 +12,17 @@ import {
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { RoomsService } from './rooms.service.js';
+import { AuthService } from '../auth/auth.service.js';
 import { AuthGuard } from '../auth/guards/auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import { JoinRoomSchema, AdmitCandidateSchema, UserSummary } from '@crucible/shared';
 
 @Controller('rooms')
 export class RoomsController {
-  constructor(@Inject(RoomsService) private readonly roomsService: RoomsService) {}
+  constructor(
+    @Inject(RoomsService) private readonly roomsService: RoomsService,
+    @Inject(AuthService) private readonly authService: AuthService,
+  ) {}
 
   @Post('join')
   async join(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
@@ -60,7 +64,16 @@ export class RoomsController {
       }
     }
 
-    return this.roomsService.getStatus(id, candidateId);
+    let isInterviewer = false;
+    const interviewerCookie = req.cookies?.['crucible_session'];
+    if (interviewerCookie) {
+      const user = await this.authService.validateSession(interviewerCookie);
+      if (user) {
+        isInterviewer = true;
+      }
+    }
+
+    return this.roomsService.getStatus(id, candidateId, isInterviewer);
   }
 
   @Get(':id/lobby')
@@ -92,5 +105,39 @@ export class RoomsController {
     }
 
     return this.roomsService.setEditorLock(id, body.locked, user);
+  }
+
+  @Post(':id/whiteboard/snapshot')
+  async saveWhiteboardSnapshot(
+    @Param('id') id: string,
+    @Body() body: { docType?: string; snapshot: string },
+    @Req() req: Request,
+  ) {
+    if (!body?.snapshot) {
+      throw new BadRequestException('snapshot string is required');
+    }
+
+    // Authenticate participant
+    const interviewerCookie = req.cookies?.['crucible_session'];
+    const candidateCookie = req.cookies?.['crucible_candidate_session'];
+
+    let authenticated = false;
+    if (interviewerCookie) {
+      const user = await this.authService.validateSession(interviewerCookie);
+      if (user) authenticated = true;
+    }
+    if (!authenticated && candidateCookie) {
+      const candidate = this.roomsService.validateCandidateSession(candidateCookie);
+      if (candidate && candidate.interviewId === id) {
+        authenticated = true;
+      }
+    }
+
+    if (!authenticated) {
+      throw new BadRequestException('Participant authentication required to save snapshot');
+    }
+
+    const docType = body.docType || 'whiteboard';
+    return this.roomsService.saveWhiteboardSnapshot(id, docType, body.snapshot);
   }
 }
