@@ -13,6 +13,7 @@
   "dependencies": {
     "@crucible/shared": "workspace:*",
     "@crucible/ui": "workspace:*",
+    "@excalidraw/excalidraw": "^0.18.1",
     "@hocuspocus/provider": "^4.8.0",
     "@monaco-editor/react": "^4.7.0",
     "clsx": "^2.1.1",
@@ -23,7 +24,6 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.0.1",
-    "tldraw": "^5.6.0",
     "y-monaco": "^0.1.6",
     "yjs": "^13.6.33"
   },
