@@ -22,9 +22,24 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@crucible/ui';
-import { Plus, Terminal, Copy, Check, ExternalLink, LogOut, Search, BookOpen } from 'lucide-react';
+import {
+  Plus,
+  Terminal,
+  Copy,
+  Check,
+  ExternalLink,
+  LogOut,
+  Search,
+  BookOpen,
+  FileText,
+  Users2,
+  RotateCcw,
+} from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
+import { AggregateStatsCards } from '@/components/dashboard/AggregateStatsCards';
+import { CandidateComparisonModal } from '@/components/dashboard/CandidateComparisonModal';
+import { Recommendation } from '@crucible/shared';
 
 interface InterviewItem {
   id: string;
@@ -35,6 +50,38 @@ interface InterviewItem {
   startedAt: string | null;
   endedAt: string | null;
   createdAt: string;
+  scorecard?: {
+    recommendation: Recommendation;
+    summary: string | null;
+  } | null;
+}
+
+const REC_BADGE_STYLE: Record<Recommendation, { label: string; className: string }> = {
+  strong_hire: {
+    label: 'Strong Hire',
+    className: 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/40',
+  },
+  hire: {
+    label: 'Hire',
+    className: 'bg-teal-950/60 text-teal-400 border border-teal-500/40',
+  },
+  no_hire: {
+    label: 'No Hire',
+    className: 'bg-amber-950/60 text-amber-400 border border-amber-500/40',
+  },
+  strong_no_hire: {
+    label: 'Strong No Hire',
+    className: 'bg-rose-950/60 text-rose-400 border border-rose-500/40',
+  },
+};
+
+function formatDuration(startedAt: string | null, endedAt: string | null): string {
+  if (!startedAt) return '—';
+  if (!endedAt) return 'In progress';
+  const start = new Date(startedAt).getTime();
+  const end = new Date(endedAt).getTime();
+  const diffMinutes = Math.max(1, Math.round((end - start) / 60000));
+  return `${diffMinutes}m`;
 }
 
 export default function DashboardPage() {
@@ -45,6 +92,11 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [search, setSearch] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
+  const [recommendationFilter, setRecommendationFilter] = React.useState<string>('all');
+
+  // Candidate Comparison Selection
+  const [selectedCandidateIds, setSelectedCandidateIds] = React.useState<string[]>([]);
+  const [isCompareOpen, setIsCompareOpen] = React.useState(false);
 
   // Modal State
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
@@ -120,10 +172,32 @@ export default function DashboardPage() {
     setScheduledAt('');
   };
 
+  const toggleCandidateSelection = (id: string) => {
+    setSelectedCandidateIds((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((item) => item !== id);
+      }
+      if (prev.length >= 2) {
+        // Keep at most 2 by replacing the oldest
+        return [prev[1]!, id];
+      }
+      return [...prev, id];
+    });
+  };
+
+  const displayedInterviews = React.useMemo(() => {
+    if (recommendationFilter === 'all') return interviews;
+    if (recommendationFilter === 'none') {
+      return interviews.filter((item) => !item.scorecard?.recommendation);
+    }
+    return interviews.filter((item) => item.scorecard?.recommendation === recommendationFilter);
+  }, [interviews, recommendationFilter]);
+
   if (authLoading || (!user && isLoading)) {
     return (
       <div className="min-h-screen bg-base p-6 max-w-6xl mx-auto space-y-4">
         <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-24 w-full" />
         <Skeleton className="h-64 w-full" />
       </div>
     );
@@ -168,34 +242,87 @@ export default function DashboardPage() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-6 space-y-6">
-        {/* Filter Controls */}
-        <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted" />
-            <input
-              type="text"
-              placeholder="Search candidate name..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-surface border border-border rounded-control text-primary placeholder:text-muted focus:outline-none focus:border-accent"
-            />
-          </div>
+        {/* Aggregate Stats Cards */}
+        <section aria-label="Dashboard Overview Statistics">
+          <AggregateStatsCards />
+        </section>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted">Status:</span>
-            <div className="w-36">
-              <Select
-                value={statusFilter}
-                onValueChange={setStatusFilter}
-                options={[
-                  { value: 'all', label: 'All Statuses' },
-                  { value: 'scheduled', label: 'Scheduled' },
-                  { value: 'live', label: 'Live' },
-                  { value: 'completed', label: 'Completed' },
-                  { value: 'cancelled', label: 'Cancelled' },
-                ]}
+        {/* Filter Controls & Comparison Actions */}
+        <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <div className="flex flex-1 items-center gap-3 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted" />
+              <input
+                type="text"
+                placeholder="Search candidate name..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-surface border border-border rounded-control text-primary placeholder:text-muted focus:outline-none focus:border-accent"
               />
             </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted whitespace-nowrap">Status:</span>
+              <div className="w-32">
+                <Select
+                  value={statusFilter}
+                  onValueChange={setStatusFilter}
+                  options={[
+                    { value: 'all', label: 'All Statuses' },
+                    { value: 'scheduled', label: 'Scheduled' },
+                    { value: 'live', label: 'Live' },
+                    { value: 'completed', label: 'Completed' },
+                    { value: 'cancelled', label: 'Cancelled' },
+                  ]}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted whitespace-nowrap">Recommendation:</span>
+              <div className="w-36">
+                <Select
+                  value={recommendationFilter}
+                  onValueChange={setRecommendationFilter}
+                  options={[
+                    { value: 'all', label: 'All Ratings' },
+                    { value: 'strong_hire', label: 'Strong Hire' },
+                    { value: 'hire', label: 'Hire' },
+                    { value: 'no_hire', label: 'No Hire' },
+                    { value: 'strong_no_hire', label: 'Strong No Hire' },
+                    { value: 'none', label: 'Unrated' },
+                  ]}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Compare Candidates Action Button */}
+          <div className="flex items-center gap-2 shrink-0">
+            {selectedCandidateIds.length > 0 && (
+              <span className="text-xs font-mono text-muted">
+                {selectedCandidateIds.length}/2 selected
+              </span>
+            )}
+            <Button
+              variant={selectedCandidateIds.length === 2 ? 'primary' : 'outline'}
+              size="sm"
+              disabled={selectedCandidateIds.length !== 2}
+              onClick={() => setIsCompareOpen(true)}
+            >
+              <Users2 className="w-3.5 h-3.5 mr-1.5" />
+              Compare Candidates
+            </Button>
+            {selectedCandidateIds.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedCandidateIds([])}
+                title="Clear selection"
+              >
+                <RotateCcw className="w-3 h-3" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -207,7 +334,7 @@ export default function DashboardPage() {
               <Skeleton className="h-9 w-full" />
               <Skeleton className="h-9 w-full" />
             </div>
-          ) : interviews.length === 0 ? (
+          ) : displayedInterviews.length === 0 ? (
             <EmptyState
               icon={Terminal}
               title="No interviews found"
@@ -223,15 +350,18 @@ export default function DashboardPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10 text-center">Compare</TableHead>
                   <TableHead>Candidate</TableHead>
                   <TableHead>Role Title</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Duration</TableHead>
+                  <TableHead>Recommendation</TableHead>
                   <TableHead>Scheduled Date</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {interviews.map((item) => {
+                {displayedInterviews.map((item) => {
                   const statusVariant =
                     item.status === 'live'
                       ? 'accent'
@@ -241,14 +371,53 @@ export default function DashboardPage() {
                           ? 'danger'
                           : 'default';
 
+                  const isSelected = selectedCandidateIds.includes(item.id);
+                  const recStyle = item.scorecard?.recommendation
+                    ? REC_BADGE_STYLE[item.scorecard.recommendation]
+                    : null;
+
                   return (
-                    <TableRow key={item.id}>
+                    <TableRow key={item.id} className={isSelected ? 'bg-accent/5' : undefined}>
+                      <TableCell className="text-center">
+                        <input
+                          type="checkbox"
+                          aria-label={`Select ${item.candidateName} for comparison`}
+                          checked={isSelected}
+                          onChange={() => toggleCandidateSelection(item.id)}
+                          className="h-3.5 w-3.5 rounded border-border bg-base text-accent focus:ring-accent cursor-pointer accent-[#E2C044]"
+                        />
+                      </TableCell>
                       <TableCell className="font-medium text-primary">
-                        {item.candidateName}
+                        {item.status === 'completed' ? (
+                          <button
+                            onClick={() => router.push(`/dashboard/interviews/${item.id}`)}
+                            className="hover:text-accent hover:underline text-left"
+                          >
+                            {item.candidateName}
+                          </button>
+                        ) : (
+                          item.candidateName
+                        )}
                       </TableCell>
                       <TableCell className="text-muted">{item.roleTitle || '—'}</TableCell>
                       <TableCell>
                         <Badge variant={statusVariant}>{item.status.toUpperCase()}</Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted">
+                        {formatDuration(item.startedAt, item.endedAt)}
+                      </TableCell>
+                      <TableCell>
+                        {recStyle ? (
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded text-[10px] font-mono font-medium ${recStyle.className}`}
+                          >
+                            {recStyle.label}
+                          </span>
+                        ) : item.status === 'completed' ? (
+                          <span className="text-[11px] text-muted font-mono italic">Pending</span>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-muted font-mono text-[11px]">
                         {item.scheduledAt
@@ -256,14 +425,36 @@ export default function DashboardPage() {
                           : 'Unscheduled'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => router.push(`/room/${item.id}`)}
-                        >
-                          <ExternalLink className="w-3 h-3 mr-1" />
-                          Open Room
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {item.status === 'completed' ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => router.push(`/dashboard/interviews/${item.id}`)}
+                            >
+                              <FileText className="w-3 h-3 mr-1" />
+                              Review
+                            </Button>
+                          ) : item.status === 'live' ? (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => router.push(`/room/${item.id}`)}
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Join Room
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => router.push(`/room/${item.id}`)}
+                            >
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Open Room
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -273,6 +464,14 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
+
+      {/* Candidate Comparison Modal */}
+      <CandidateComparisonModal
+        id1={selectedCandidateIds[0] ?? null}
+        id2={selectedCandidateIds[1] ?? null}
+        isOpen={isCompareOpen}
+        onOpenChange={setIsCompareOpen}
+      />
 
       {/* New Interview Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

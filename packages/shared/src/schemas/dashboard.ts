@@ -86,3 +86,4 @@ export interface CandidateComparisonResponse {
   interviewB: InterviewDetailResponse;
   criteria: CriteriaComparisonItem[];
 }
+
