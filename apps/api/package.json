@@ -10,9 +10,13 @@
     "start:prod": "node dist/main",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "seed": "prisma db seed",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "vitest run --config vitest.e2e.config.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@crucible/shared": "workspace:*",
@@ -42,6 +46,7 @@
     "@types/supertest": "^6.0.2",
     "prisma": "^6.4.1",
     "supertest": "^7.0.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
   }

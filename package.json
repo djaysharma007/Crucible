@@ -13,7 +13,8 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,json,css,md}\"",
     "docker:up": "docker compose -f infra/docker/docker-compose.yml up -d",
     "docker:down": "docker compose -f infra/docker/docker-compose.yml down",
-    "prisma:generate": "pnpm --filter @crucible/api prisma:generate"
+    "prisma:generate": "pnpm --filter @crucible/api prisma:generate",
+    "seed": "pnpm --filter @crucible/api seed"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.7.1",

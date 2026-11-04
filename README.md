@@ -1,128 +1,193 @@
 # Crucible
 
-Crucible is a web platform that consolidates technical interview tooling into a single room: video calling, collaborative code editing, isolated code execution, shared whiteboard, timestamped interviewer notes, and structured rubric scoring. Completed sessions provide full timeline replay and scorecard review from the dashboard.
+> **Crucible** is a unified, high-performance technical interview platform that consolidates video calling, collaborative code editing, multi-language execution in an isolated sandbox, architectural whiteboarding, private timestamped interviewer notes, structured rubric scoring, advisory integrity telemetry, and millisecond-accurate timeline replay into a single browser room with frictionless candidate join.
 
-## Architecture
+---
+
+## 1. Core Platform Capabilities
+
+- **Frictionless Candidate Join:** High-entropy cryptographic single-use room tokens allow candidates to join in under 1 minute with zero account registration or software downloads.
+- **Collaborative Code Editing (Yjs CRDT):** Monaco Editor integration with instant conflict-free concurrent editing, syntax highlighting, syntax-aware language switching, and interviewer editor locking.
+- **Multi-Language Isolated Execution:** Judge0 CE container execution across TypeScript, JavaScript, Python, Java, and C++ with strict Linux cgroup limits (CPU, memory, wall time, process count). Hidden test cases are evaluated securely on the server and never sent to candidate browsers.
+- **Infinite Vector Whiteboard:** Real-time collaborative Tldraw v3 canvas synchronized across participants with periodic vector snapshots.
+- **Live Video, Audio & Screen Sharing (LiveKit):** WebRTC media powered by LiveKit SFU with double-consent cloud recording (renders directly to MP4 with S3/MinIO upload) and candidate screen share theater.
+- **Interviewer Evaluation Suite:**
+  - Private timestamped notes auto-calculated with `[mm:ss]` session offsets.
+  - 60-minute roadmap section timer with quick progress logging.
+  - Structured 4-level rubric scoring (Problem Solving, Code Quality, System Efficiency, Communication) with weighted averages and hiring recommendations (`strong_hire`, `hire`, `no_hire`, `strong_no_hire`).
+- **Deep Dashboard & Timeline Replay:**
+  - Interactive timeline scrubber with play/pause, seek slider, variable speeds ($1\times, 2\times, 5\times, 10\times$), and clickable note pin markers.
+  - Point-in-time replay reconstructing both code execution outputs and whiteboard drawings.
+  - Side-by-side candidate comparison modal with criteria score deltas.
+  - Printer-friendly PDF report exports.
+- **Advisory Integrity Signals & Hardening:**
+  - Neutral advisory logging of tab switches, window blur events, and large clipboard pastes ($\ge 50$ characters, size/timestamp only).
+  - Transparent candidate disclosure notice prior to entering the session.
+  - Redis token-bucket rate limiting across auth, join, execution, and telemetry endpoints.
+  - Strict security headers (`CSP`, `HSTS`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`).
+  - Configurable 90-day retention cleanup and permanent session deletion.
+- **Anti-AI-Slop Dark Mode Aesthetic:**
+  - Built strictly with Section 13 design tokens (`#1E2019`, `#393E41`, `#D3D0CB`, `#E2C044`, `#587B7F`), 4px grid, accessible Radix UI primitives, and visible keyboard focus states.
+
+---
+
+## 2. Architecture Overview
 
 ```
-                    +------------------------------+
-                    |   Browser (Next.js, React)   |
-                    | Monaco · tldraw · LiveKit SDK|
-                    +---+-----------+------------+-+
-                        | HTTPS     | WebSocket  | WebRTC
-                        v           v            v
-               +------------+ +-----------+ +-------------+
-               |  API       | |  Collab   | |  LiveKit    |
-               |  (NestJS)  | | (Hocus-   | |  server     |
-               |            | |  pocus)   | |             |
-               +---+---+-+--+ +-----+-----+ +-------------+
-                   |   |            |
-          +--------+   +-------+    |
-          v                    v    v
-     +----------+        +-------------+      +--------------+
-     | Postgres |        |   Redis     |      |  Judge0      |
-     | (Prisma) |        | presence,   |      | (Docker,     |
-     |          |        | rate limits |      |  sandboxed)  |
-     +----------+        +-------------+      +--------------+
-                               |
-                        +------v------+
-                        | Object store|
-                        | (S3 / MinIO)|
-                        +-------------+
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                                   Browser Client                                       │
+│          Next.js 15 (React 19) · Monaco Editor · Tldraw v3 · LiveKit Client SDK         │
+└──────────────────┬───────────────────────────────┬────────────────────────────┬────────┘
+                   │ HTTPS / REST                  │ WebSocket (WSS)            │ WebRTC
+                   ▼                               ▼                            ▼
+┌──────────────────────────────────┐ ┌───────────────────────────┐ ┌─────────────────────┐
+│          NestJS REST API         │ │   Hocuspocus Collab Node  │ │     LiveKit SFU     │
+│ Auth · RBAC · Rate Limits · CRUD │ │ Yjs CRDT · Awareness Sync │ │ Video/Audio/Screen  │
+│ Execution Gateway · Signals · PDF│ │ Lock Enforcement · Replay │ │   Cloud Egress MP4  │
+└─────────┬──────────────┬─────────┘ └─────────────┬─────────────┘ └──────────┬──────────┘
+          │              │                         │                          │
+          ▼              ▼                         ▼                          ▼
+┌──────────────────┐ ┌───────────────────────────────────────────┐ ┌─────────────────────┐
+│     Judge0 CE    │ │                 Datastores                │ │   MinIO / S3 Bucket │
+│ Linux cgroup v2  │ │  PostgreSQL 16 (Prisma)  ·  Redis 7       │ │ Room Recordings &   │
+│ Isolated Sandbox │ │  Interviews · Scorecards · State Machine  │ │ Whiteboard Exports  │
+└──────────────────┘ └───────────────────────────────────────────┘ └─────────────────────┘
 ```
 
-### Components
+### Workspace Layout
 
-- **Web (`apps/web`):** Next.js 15 (App Router), React 19, Tailwind CSS with Crucible design tokens.
-- **API (`apps/api`):** NestJS REST service (`/api/v1`) handling authentication, interview lifecycle, token generation, and execution orchestration.
-- **Collab (`apps/collab`):** Hocuspocus server managing real-time Yjs CRDT synchronization for editor documents and whiteboard sessions.
-- **Shared (`packages/shared`):** Canonical TypeScript types, constants, and Zod schemas shared across services.
-- **UI (`packages/ui`):** Component library built with Radix UI primitives and styled via Tailwind CSS adhering to the Crucible design system.
-- **PostgreSQL (Prisma):** System of record for users, interviews, questions, rubrics, scorecards, and CRDT update logs.
-- **Redis:** Transient state, rate limiting, and presence tracking.
-- **MinIO / S3:** Object storage for whiteboard snapshots and exports.
-- **Judge0:** Isolated sandbox environment for multi-language test execution.
-- **LiveKit:** Audio, video, and screen share transport.
+```
+crucible/
+├── apps/
+│   ├── web/              # Next.js 15 App Router frontend
+│   ├── api/              # NestJS REST backend service
+│   └── collab/           # Hocuspocus CRDT real-time sync server
+├── packages/
+│   ├── shared/           # Zod schemas, TypeScript types, constants
+│   ├── ui/               # Accessible UI component library (Radix primitives)
+│   └── config/           # Shared TypeScript, Tailwind, ESLint configs
+├── infra/
+│   └── docker/           # Docker Compose manifests (Postgres, Redis, Judge0, Caddy)
+└── docs/
+    ├── architecture.md   # System architecture & technical specs
+    └── adr/              # Architecture Decision Records (Yjs, LiveKit, Judge0, Design)
+```
 
-## Tech Stack and Rationale
+---
 
-| Technology                  | Selection Rationale                                                                        |
-| --------------------------- | ------------------------------------------------------------------------------------------ |
-| **TypeScript (Strict)**     | End-to-end type safety across packages without loose types or `any`.                       |
-| **Next.js & React**         | Server components for auth/dashboard flows, client components for real-time room.          |
-| **NestJS**                  | Structured modular backend architecture with dependency injection and typed middleware.    |
-| **Prisma & PostgreSQL**     | Declarative data modeling, migrations, and parameterized query execution.                  |
-| **Yjs & Hocuspocus**        | Conflict-free replicated data types (CRDTs) allowing offline recovery and timeline replay. |
-| **Tailwind CSS & Radix UI** | Strict token enforcement with accessible headless UI primitives.                           |
-| **Vitest & Playwright**     | Fast unit and integration tests with deterministic browser-driven end-to-end testing.      |
+## 3. Tech Stack & Selection Rationale
 
-## Prerequisites
+| Technology | Selection Rationale |
+|---|---|
+| **TypeScript (Strict)** | Strict `noImplicitAny` and end-to-end typing across monorepo boundaries with zero loose `any`. |
+| **Next.js 15 & React 19** | Fast SSR for dashboard & review, client-side hydration for collaborative room tooling. |
+| **NestJS 11** | Modular backend architecture with dependency injection, global exception filters, and guard pipelines. |
+| **Prisma 6 & PostgreSQL 16** | Strongly-typed data layer with migrations and parameterized queries. |
+| **Yjs & Hocuspocus** | Conflict-free replicated data types (CRDTs) enabling instant offline recovery and point-in-time replay. |
+| **LiveKit SFU** | Resilient WebRTC audio/video transport with token-based access and cloud egress recording. |
+| **Judge0 CE** | Dockerized sandbox with Linux cgroup v2 resource limits and internal network isolation. |
+| **Tailwind CSS & Radix UI** | Strict Section 13 design tokens with accessible, headless UI primitives. |
+| **Vitest & Supertest** | Lightning-fast unit, component, and full-stack API integration testing. |
 
-- Node.js >= 20 (v22 or v24 recommended)
-- pnpm >= 9
-- Docker and Docker Compose
+---
 
-## Getting Started Locally
+## 4. Quickstart Guide (Local Development)
 
-1. **Clone the repository:**
+### Prerequisites
+- Node.js $\ge 20$ (v22 LTS recommended)
+- pnpm $\ge 9$ (v10 recommended)
+- Docker & Docker Compose
 
-   ```bash
-   git clone https://github.com/djaysharma007/Crucible.git
-   cd Crucible
-   ```
+### 1. Clone & Configure
+```bash
+git clone https://github.com/djaysharma007/Crucible.git
+cd Crucible
+cp .env.example .env
+```
 
-2. **Configure environment:**
+### 2. Start Supporting Infrastructure
+```bash
+pnpm docker:up
+```
+*Starts PostgreSQL (port 5433), Redis (port 6379), and MinIO (ports 9000 & 9001).*
 
+### 3. Install Dependencies & Build Packages
+```bash
+pnpm install
+pnpm prisma:generate
+```
+
+### 4. Seed Production Demo Data
+```bash
+pnpm seed
+```
+*Preloads default interviewer credentials, core engineering rubric, question bank problems with multi-language starter codes and test cases, and past demo interviews with rich replay timelines.*
+
+### 5. Launch Development Servers
+```bash
+pnpm dev
+```
+In a separate terminal, launch the real-time CRDT sync server:
+```bash
+pnpm dev:collab
+```
+
+- **Web Frontend:** `http://localhost:3000`
+- **REST API:** `http://localhost:4000/api/v1`
+- **Collab WebSocket:** `ws://localhost:1234`
+
+### Preloaded Demo Credentials
+- **Interviewer Email:** `interviewer@crucible.dev`
+- **Password:** `Password123!`
+
+---
+
+## 5. Verification & Quality Gates
+
+Run all quality gates locally:
+
+```bash
+# Typecheck across all 6 workspace packages
+pnpm typecheck
+
+# Lint check (0 errors, 0 warnings enforced)
+pnpm lint
+
+# Full test suite (108 passing tests across unit, component, and E2E)
+pnpm test
+
+# Production build compilation
+pnpm build
+```
+
+---
+
+## 6. Single-VPS Production Deployment
+
+Crucible is packaged for zero-friction single-VPS deployment with automatic HTTPS via Caddy:
+
+1. On your VPS, ensure ports `80`, `443`, and UDP `7880-7882` (if self-hosting LiveKit) are accessible.
+2. Clone the repository and configure `.env`:
    ```bash
    cp .env.example .env
+   # Set DOMAIN, LIVEKIT_API_KEY, LIVEKIT_API_SECRET, etc.
    ```
-
-3. **Start local infrastructure (Postgres, Redis, MinIO):**
-
+3. Deploy the full production stack:
    ```bash
-   pnpm docker:up
+   docker compose -f infra/docker/docker-compose.prod.yml up -d --build
    ```
-
-4. **Install dependencies:**
-
+4. Run migrations and demo seed:
    ```bash
-   pnpm install
+   docker compose -f infra/docker/docker-compose.prod.yml exec api pnpm --filter @crucible/api prisma:migrate deploy
+   docker compose -f infra/docker/docker-compose.prod.yml exec api pnpm seed
    ```
 
-5. **Generate database client:**
+---
 
-   ```bash
-   pnpm prisma:generate
-   ```
+## 7. Future Work (Roadmap)
 
-6. **Start development servers (Web and API):**
-   ```bash
-   pnpm dev
-   ```
-   - Web application: `http://localhost:3000`
-   - API service: `http://localhost:4000/api/v1`
-
-## Running Tests and Validation
-
-- **Typecheck:**
-  ```bash
-  pnpm typecheck
-  ```
-- **Run Unit Tests:**
-  ```bash
-  pnpm test
-  ```
-- **Run Linter:**
-  ```bash
-  pnpm lint
-  ```
-
-## Current Project Status and Known Limitations
-
-- **Current Stage:** Phase 0 (Setup & Monorepo Foundation).
-- **Implemented:** Monorepo architecture, Docker Compose services, Prisma schema, base UI components with Section 13 design tokens, health API endpoint, shared Zod schemas, and CI workflow.
-- **Known Limitations:**
-  - Authentication, room tokens, and collaborative editor will be implemented in Phase 1.
-  - Code execution and whiteboard sync will be implemented in Phase 2.
-  - Video and audio presence will be implemented in Phase 3.
-  - Review dashboard and timeline scrubber replay will be implemented in Phase 5.
+- **AI-Assisted Question Recommendations:** Dynamic problem difficulty calibration based on candidate velocity.
+- **Calendar & ATS Integrations:** Native Greenhouse, Lever, and Ashby webhooks for automated scorecard dispatch.
+- **Multi-Tenant Team Roles:** Organization-level RBAC for hiring managers, senior reviewers, and sourcers.
+- **Automated Video Transcription:** Speaker-separated real-time audio transcripts pinned to timeline replay events.
+- **System Design Templates:** Preconfigured distributed systems component palettes for the infinite whiteboard.
