@@ -14,8 +14,20 @@ import {
   Award,
   Film,
   FileText,
+  Trash2,
+  Activity,
 } from 'lucide-react';
-import { Badge, Button, Skeleton } from '@crucible/ui';
+import {
+  Badge,
+  Button,
+  Skeleton,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@crucible/ui';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
 import {
@@ -50,6 +62,21 @@ export default function InterviewDetailPage() {
   const [currentOffsetMs, setCurrentOffsetMs] = React.useState(0);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [playbackSpeed, setPlaybackSpeed] = React.useState(1);
+
+  // Delete Dialog State (Data Retention & Deletion)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const handleDeleteInterview = async () => {
+    try {
+      setIsDeleting(true);
+      await apiClient(`/interviews/${interviewId}`, { method: 'DELETE' });
+      router.push('/dashboard');
+    } catch (err) {
+      alert((err as Error).message || 'Failed to delete interview');
+      setIsDeleting(false);
+    }
+  };
 
   React.useEffect(() => {
     if (!authLoading && !user) {
@@ -147,6 +174,15 @@ export default function InterviewDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsDeleteDialogOpen(true)}
+            className="text-rose-400 border-rose-500/40 hover:bg-rose-950/20"
+          >
+            <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+            Delete
+          </Button>
           <Button variant="outline" size="sm" onClick={handlePrintReport}>
             <Printer className="w-3.5 h-3.5 mr-1.5" />
             Print Report
@@ -541,12 +577,104 @@ export default function InterviewDetailPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Integrity Telemetry Stream (Section 6.10) */}
+                  <div className="p-4 bg-surface border border-border rounded-panel space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-accent" />
+                      <span className="font-semibold text-xs text-primary">
+                        Integrity Telemetry (Transparency Signals)
+                      </span>
+                      <span className="text-[11px] text-muted">
+                        — Neutral facts recorded during session
+                      </span>
+                    </div>
+
+                    {replay.events.filter((e) => e.type === 'signal').length === 0 ? (
+                      <p className="text-xs text-muted/70 italic">
+                        No unusual telemetry events (tab switches or large paste blocks) detected.
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5 font-mono text-[11px] max-h-48 overflow-y-auto">
+                        {replay.events
+                          .filter((e) => e.type === 'signal')
+                          .map((sig) => {
+                            const totalSecs = Math.floor(sig.offsetMs / 1000);
+                            const mm = Math.floor(totalSecs / 60)
+                              .toString()
+                              .padStart(2, '0');
+                            const ss = (totalSecs % 60).toString().padStart(2, '0');
+                            const timeBadge = `${mm}:${ss}`;
+
+                            const sigType = sig.metadata?.signalType as string;
+                            const sigData = (sig.metadata?.data as Record<string, unknown>) || {};
+
+                            let label = 'Signal recorded';
+                            if (sigType === 'paste') {
+                              label = `Pasted ${sigData['characterCount'] ?? 'multiple'} characters (${sigData['lineCount'] ?? 1} lines)`;
+                            } else if (sigType === 'tab_hidden') {
+                              label = 'Browser tab unfocused / hidden';
+                            } else if (sigType === 'tab_visible') {
+                              label = 'Browser tab restored / visible';
+                            } else if (sigType === 'window_blur') {
+                              label = 'Window focus blurred';
+                            } else if (sigType === 'window_focus') {
+                              label = 'Window focus restored';
+                            }
+
+                            return (
+                              <div
+                                key={sig.id}
+                                className="flex items-center gap-2 p-1.5 rounded bg-surface-muted/40 border border-border"
+                              >
+                                <span className="px-1.5 py-0.5 rounded bg-base text-accent font-semibold text-[10px]">
+                                  {timeBadge}
+                                </span>
+                                <span className="text-primary">{label}</span>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
           )}
         </div>
       </main>
+
+      {/* Delete Confirmation Dialog (Section 12 / Retention) */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Interview Session</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete this interview for {detail.candidateName}?
+              This action cannot be undone. All notes, scorecard ratings, code runs, and recordings will be removed.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleDeleteInterview}
+              isLoading={isDeleting}
+            >
+              Permanently Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

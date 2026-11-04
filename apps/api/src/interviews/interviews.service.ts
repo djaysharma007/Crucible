@@ -277,6 +277,51 @@ export class InterviewsService {
     return { success: true };
   }
 
+  async delete(user: UserSummary, id: string) {
+    const interview = await this.prisma.interview.findUnique({
+      where: { id },
+    });
+
+    if (!interview) {
+      throw new NotFoundException(`Interview with ID '${id}' not found`);
+    }
+
+    if (interview.interviewerId !== user.id) {
+      throw new ForbiddenException('Only the interview owner can delete this interview');
+    }
+
+    await this.prisma.interview.delete({
+      where: { id },
+    });
+
+    this.logger.log(`Deleted interview ${id} by owner ${user.id}`);
+    return { success: true, id };
+  }
+
+  async cleanupExpired(retentionDays = 90) {
+    const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+
+    const result = await this.prisma.interview.deleteMany({
+      where: {
+        status: { in: ['completed', 'cancelled'] },
+        OR: [
+          { endedAt: { lte: cutoff } },
+          { endedAt: null, createdAt: { lte: cutoff } },
+        ],
+      },
+    });
+
+    this.logger.log(
+      `Cleaned up ${result.count} expired interviews older than ${retentionDays} days (cutoff: ${cutoff.toISOString()})`,
+    );
+
+    return {
+      deletedCount: result.count,
+      retentionDays,
+      cutoffDate: cutoff.toISOString(),
+    };
+  }
+
   async getStats(user: UserSummary): Promise<InterviewStatsResponse> {
     const interviews = await this.prisma.interview.findMany({
       where: { interviewerId: user.id },

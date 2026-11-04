@@ -21,12 +21,14 @@ import {
   PasswordResetConfirmSchema,
   UserSummary,
 } from '@crucible/shared';
+import { RateLimit } from '../common/guards/rate-limit.guard.js';
 
 @Controller('auth')
 export class AuthController {
   constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
   @Post('register')
+  @RateLimit({ limit: 10, windowSeconds: 60, keyPrefix: 'auth_register' })
   async register(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     const parseResult = RegisterSchema.safeParse(body);
     if (!parseResult.success) {
@@ -40,6 +42,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @RateLimit({ limit: 10, windowSeconds: 60, keyPrefix: 'auth_login' })
   async login(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     const parseResult = LoginSchema.safeParse(body);
     if (!parseResult.success) {
@@ -66,6 +69,7 @@ export class AuthController {
 
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
+  @RateLimit({ limit: 10, windowSeconds: 60, keyPrefix: 'auth_forgot' })
   async forgotPassword(@Body() body: unknown) {
     const parseResult = PasswordResetRequestSchema.safeParse(body);
     if (!parseResult.success) {

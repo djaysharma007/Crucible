@@ -10,3 +10,4 @@ export * from './schemas/notes.js';
 export * from './schemas/scorecard.js';
 export * from './schemas/rubric.js';
 export * from './schemas/dashboard.js';
+export * from './schemas/signals.js';
