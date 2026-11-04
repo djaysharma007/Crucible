@@ -1,0 +1,250 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  displayName  String   @map("display_name")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  rubricTemplates RubricTemplate[]
+  questions       Question[]
+  interviews      Interview[]
+
+  @@map("users")
+}
+
+model RubricTemplate {
+  id        String   @id @default(uuid()) @db.Uuid
+  ownerId   String   @map("owner_id") @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner      User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  criteria   RubricCriterion[]
+  interviews Interview[]
+
+  @@map("rubric_templates")
+}
+
+model RubricCriterion {
+  id               String   @id @default(uuid()) @db.Uuid
+  templateId       String   @map("template_id") @db.Uuid
+  name             String
+  description      String
+  weight           Float    @default(1.0)
+  levelDescriptors Json     @map("level_descriptors")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  template         RubricTemplate    @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  scorecardRatings ScorecardRating[]
+
+  @@map("rubric_criteria")
+}
+
+model Question {
+  id            String    @id @default(uuid()) @db.Uuid
+  ownerId       String    @map("owner_id") @db.Uuid
+  title         String
+  descriptionMd String    @map("description_md")
+  difficulty    String
+  tags          String[]
+  archivedAt    DateTime? @map("archived_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  owner              User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  languages          QuestionLanguage[]
+  testCases          TestCase[]
+  interviewQuestions InterviewQuestion[]
+
+  @@map("questions")
+}
+
+model QuestionLanguage {
+  id          String   @id @default(uuid()) @db.Uuid
+  questionId  String   @map("question_id") @db.Uuid
+  language    String
+  starterCode String   @map("starter_code")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, language])
+  @@map("question_languages")
+}
+
+model TestCase {
+  id             String   @id @default(uuid()) @db.Uuid
+  questionId     String   @map("question_id") @db.Uuid
+  input          String
+  expectedOutput String   @map("expected_output")
+  isHidden       Boolean  @default(false) @map("is_hidden")
+  order          Int      @default(0)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("test_cases")
+}
+
+model Interview {
+  id               String    @id @default(uuid()) @db.Uuid
+  interviewerId    String    @map("interviewer_id") @db.Uuid
+  candidateName    String    @map("candidate_name")
+  roleTitle        String?   @map("role_title")
+  status           String    @default("scheduled")
+  rubricTemplateId String?   @map("rubric_template_id") @db.Uuid
+  scheduledAt      DateTime? @map("scheduled_at")
+  startedAt        DateTime? @map("started_at")
+  endedAt          DateTime? @map("ended_at")
+  roomTokenHash    String    @map("room_token_hash")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  interviewer        User                @relation(fields: [interviewerId], references: [id], onDelete: Cascade)
+  rubricTemplate     RubricTemplate?     @relation(fields: [rubricTemplateId], references: [id], onDelete: SetNull)
+  interviewQuestions InterviewQuestion[]
+  notes              Note[]
+  scorecard          Scorecard?
+  collabUpdates      CollabUpdate[]
+  collabSnapshots    CollabSnapshot[]
+  signals            Signal[]
+
+  @@index([interviewerId, status, startedAt])
+  @@map("interviews")
+}
+
+model InterviewQuestion {
+  id          String    @id @default(uuid()) @db.Uuid
+  interviewId String    @map("interview_id") @db.Uuid
+  questionId  String    @map("question_id") @db.Uuid
+  order       Int       @default(0)
+  language    String    @default("typescript")
+  startedAt   DateTime? @map("started_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  question  Question  @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  codeRuns  CodeRun[]
+
+  @@map("interview_questions")
+}
+
+model CodeRun {
+  id                  String   @id @default(uuid()) @db.Uuid
+  interviewQuestionId String   @map("interview_question_id") @db.Uuid
+  language            String
+  sourceSnapshot      String   @map("source_snapshot")
+  results             Json
+  requestedAt         DateTime @default(now()) @map("requested_at")
+  durationMs          Int      @map("duration_ms")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  interviewQuestion InterviewQuestion @relation(fields: [interviewQuestionId], references: [id], onDelete: Cascade)
+
+  @@map("code_runs")
+}
+
+model Note {
+  id          String   @id @default(uuid()) @db.Uuid
+  interviewId String   @map("interview_id") @db.Uuid
+  bodyMd      String   @map("body_md")
+  offsetMs    Int      @map("offset_ms")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  @@index([interviewId, offsetMs])
+  @@map("notes")
+}
+
+model Scorecard {
+  id             String    @id @default(uuid()) @db.Uuid
+  interviewId    String    @unique @map("interview_id") @db.Uuid
+  recommendation String
+  summaryText    String?   @map("summary_text")
+  submittedAt    DateTime? @map("submitted_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  interview Interview         @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  ratings   ScorecardRating[]
+
+  @@map("scorecards")
+}
+
+model ScorecardRating {
+  id            String   @id @default(uuid()) @db.Uuid
+  scorecardId   String   @map("scorecard_id") @db.Uuid
+  criterionId   String   @map("criterion_id") @db.Uuid
+  rating        Int
+  justification String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  scorecard Scorecard       @relation(fields: [scorecardId], references: [id], onDelete: Cascade)
+  criterion RubricCriterion @relation(fields: [criterionId], references: [id], onDelete: Restrict)
+
+  @@unique([scorecardId, criterionId])
+  @@map("scorecard_ratings")
+}
+
+model CollabUpdate {
+  id          String   @id @default(uuid()) @db.Uuid
+  interviewId String   @map("interview_id") @db.Uuid
+  docType     String   @map("doc_type")
+  payload     Bytes
+  offsetMs    Int      @map("offset_ms")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  @@index([interviewId, docType, offsetMs])
+  @@map("collab_updates")
+}
+
+model CollabSnapshot {
+  id          String   @id @default(uuid()) @db.Uuid
+  interviewId String   @map("interview_id") @db.Uuid
+  docType     String   @map("doc_type")
+  payload     Bytes
+  offsetMs    Int      @map("offset_ms")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  @@map("collab_snapshots")
+}
+
+model Signal {
+  id          String   @id @default(uuid()) @db.Uuid
+  interviewId String   @map("interview_id") @db.Uuid
+  type        String
+  metadata    Json
+  offsetMs    Int      @map("offset_ms")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  @@map("signals")
+}
+

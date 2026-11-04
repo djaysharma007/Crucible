@@ -1,0 +1,14 @@
+{
+  "extends": "@crucible/config/tsconfig/node",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "target": "ES2022",
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]
+}

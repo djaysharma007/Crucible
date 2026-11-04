@@ -1,0 +1,26 @@
+{
+  "name": "@crucible/collab",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@crucible/shared": "workspace:*",
+    "@hocuspocus/server": "^2.15.0",
+    "dotenv": "^16.4.7",
+    "yjs": "^13.6.23"
+  },
+  "devDependencies": {
+    "@crucible/config": "workspace:*",
+    "@types/node": "^22.13.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}
