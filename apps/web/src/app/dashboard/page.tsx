@@ -22,7 +22,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@crucible/ui';
-import { Plus, Terminal, Copy, Check, ExternalLink, LogOut, Search } from 'lucide-react';
+import { Plus, Terminal, Copy, Check, ExternalLink, LogOut, Search, BookOpen } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
 
@@ -151,6 +151,14 @@ export default function DashboardPage() {
             <LogOut className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
             Sign Out
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push('/dashboard/questions')}
+          >
+            <BookOpen className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
+            Question Bank
+          </Button>
           <Button variant="primary" size="sm" onClick={() => setIsCreateOpen(true)}>
             <Plus className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
             New Interview
@@ -169,29 +177,32 @@ export default function DashboardPage() {
               placeholder="Search candidate name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-9 w-full rounded-control border border-border bg-surface pl-9 pr-3 text-sm text-primary placeholder:text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-surface border border-border rounded-control text-primary placeholder:text-muted focus:outline-none focus:border-accent"
             />
           </div>
 
-          <div className="w-full sm:w-48">
-            <Select
-              value={statusFilter}
-              onValueChange={setStatusFilter}
-              options={[
-                { value: 'all', label: 'All Statuses' },
-                { value: 'scheduled', label: 'Scheduled' },
-                { value: 'live', label: 'Live' },
-                { value: 'completed', label: 'Completed' },
-                { value: 'cancelled', label: 'Cancelled' },
-              ]}
-            />
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted">Status:</span>
+            <div className="w-36">
+              <Select
+                value={statusFilter}
+                onValueChange={setStatusFilter}
+                options={[
+                  { value: 'all', label: 'All Statuses' },
+                  { value: 'scheduled', label: 'Scheduled' },
+                  { value: 'live', label: 'Live' },
+                  { value: 'completed', label: 'Completed' },
+                  { value: 'cancelled', label: 'Cancelled' },
+                ]}
+              />
+            </div>
           </div>
         </div>
 
         {/* Interviews Table / Empty State */}
-        <div className="rounded-panel border border-border bg-surface p-4">
+        <div className="border border-border rounded-panel bg-surface overflow-hidden">
           {isLoading ? (
-            <div className="space-y-2">
+            <div className="p-4 space-y-3">
               <Skeleton className="h-9 w-full" />
               <Skeleton className="h-9 w-full" />
               <Skeleton className="h-9 w-full" />

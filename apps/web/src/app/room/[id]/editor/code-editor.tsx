@@ -18,6 +18,7 @@ interface CodeEditorProps {
   language: SupportedLanguage;
   onLanguageChange?: (lang: SupportedLanguage) => void;
   starterCode?: string;
+  onCodeChange?: (code: string) => void;
 }
 
 const DEFAULT_STARTER_CODE: Record<SupportedLanguage, string> = {
@@ -37,6 +38,7 @@ export function CodeEditor({
   language,
   onLanguageChange,
   starterCode,
+  onCodeChange,
 }: CodeEditorProps) {
   const collabUrl = process.env.NEXT_PUBLIC_COLLAB_URL || 'ws://localhost:4001';
   const editorRef = React.useRef<unknown>(null);
@@ -99,6 +101,14 @@ export function CodeEditor({
       const codeToInsert = starterCode || DEFAULT_STARTER_CODE[language] || '';
       ytext.insert(0, codeToInsert);
     }
+
+    // Inform initial code
+    onCodeChange?.(ytext.toString());
+
+    // Listen to text changes
+    ytext.observe(() => {
+      onCodeChange?.(ytext.toString());
+    });
 
     // Bind Monaco editor to Yjs CRDT and awareness
     const awareness = provider.awareness;

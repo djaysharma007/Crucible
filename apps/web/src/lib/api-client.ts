@@ -48,3 +48,23 @@ export async function apiClient<T>(endpoint: string, options: RequestInit = {}):
 
   return response.json() as Promise<T>;
 }
+
+apiClient.get = <T>(endpoint: string, options?: RequestInit) =>
+  apiClient<T>(endpoint, { ...options, method: 'GET' });
+
+apiClient.post = <T>(endpoint: string, data?: unknown, options?: RequestInit) =>
+  apiClient<T>(endpoint, {
+    ...options,
+    method: 'POST',
+    body: data !== undefined ? JSON.stringify(data) : undefined,
+  });
+
+apiClient.patch = <T>(endpoint: string, data?: unknown, options?: RequestInit) =>
+  apiClient<T>(endpoint, {
+    ...options,
+    method: 'PATCH',
+    body: data !== undefined ? JSON.stringify(data) : undefined,
+  });
+
+apiClient.delete = <T>(endpoint: string, options?: RequestInit) =>
+  apiClient<T>(endpoint, { ...options, method: 'DELETE' });
