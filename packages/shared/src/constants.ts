@@ -2,6 +2,14 @@ export const SUPPORTED_LANGUAGES = ['javascript', 'typescript', 'python', 'java'
 
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
+export const JUDGE0_LANGUAGE_IDS: Record<SupportedLanguage, number> = {
+  javascript: 63,
+  typescript: 74,
+  python: 71,
+  java: 62,
+  cpp: 54,
+};
+
 export const INTERVIEW_STATUSES = ['scheduled', 'live', 'completed', 'cancelled'] as const;
 
 export type InterviewStatus = (typeof INTERVIEW_STATUSES)[number];

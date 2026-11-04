@@ -15,3 +15,42 @@ export const RunCustomSchema = z.object({
 });
 
 export type RunCustomInput = z.infer<typeof RunCustomSchema>;
+
+export interface TestCaseResult {
+  testCaseId: string;
+  order: number;
+  passed: boolean;
+  status: string;
+  input?: string;
+  expectedOutput?: string;
+  actualOutput?: string;
+  stdout?: string;
+  stderr?: string | null;
+  runtimeMs: number;
+  memoryKb: number;
+  isHidden: boolean;
+}
+
+export interface RunCodeResponse {
+  runId: string;
+  interviewQuestionId: string;
+  language: string;
+  allPassed: boolean;
+  totalCases: number;
+  passedCases: number;
+  visibleResults: TestCaseResult[];
+  hiddenSummary: {
+    total: number;
+    passed: number;
+  };
+  hiddenResults?: TestCaseResult[];
+  durationMs: number;
+}
+
+export interface RunCustomResponse {
+  stdout: string;
+  stderr: string | null;
+  status: string;
+  runtimeMs: number;
+  memoryKb: number;
+}

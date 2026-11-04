@@ -3,6 +3,7 @@ export * from './types.js';
 export * from './schemas/auth.js';
 export * from './schemas/interview.js';
 export * from './schemas/room.js';
+export * from './schemas/question.js';
 export * from './schemas/execution.js';
 export * from './schemas/notes.js';
 export * from './schemas/scorecard.js';
