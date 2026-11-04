@@ -8,7 +8,7 @@ describe('HomePage', () => {
     render(<HomePage />);
     expect(screen.getByText('Crucible')).toBeDefined();
     expect(screen.getByText('System Verification')).toBeDefined();
-    expect(screen.getByText('Phase 0: Setup')).toBeDefined();
+    expect(screen.getByText('Phase 1: Foundation')).toBeDefined();
   });
 
   it('renders designed empty state and actions', () => {

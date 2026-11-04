@@ -13,12 +13,17 @@
   "dependencies": {
     "@crucible/shared": "workspace:*",
     "@crucible/ui": "workspace:*",
+    "@hocuspocus/provider": "^4.8.0",
+    "@monaco-editor/react": "^4.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
+    "monaco-editor": "^0.57.0",
     "next": "^15.1.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwind-merge": "^3.0.1"
+    "tailwind-merge": "^3.0.1",
+    "y-monaco": "^0.1.6",
+    "yjs": "^13.6.33"
   },
   "devDependencies": {
     "@crucible/config": "workspace:*",

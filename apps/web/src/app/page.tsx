@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Link from 'next/link';
 import {
   Button,
   Badge,
@@ -19,17 +20,21 @@ export default function HomePage() {
       <header className="h-12 border-b border-border bg-surface px-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="font-semibold text-base tracking-tight text-primary">Crucible</span>
-          <Badge variant="secondary">Phase 0: Setup</Badge>
+          <Badge variant="secondary">Phase 1: Foundation</Badge>
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            Sign In
-          </Button>
-          <Button variant="primary" size="sm">
-            <Plus className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
-            New Interview
-          </Button>
+          <Link href="/login">
+            <Button variant="outline" size="sm">
+              Sign In
+            </Button>
+          </Link>
+          <Link href="/dashboard">
+            <Button variant="primary" size="sm">
+              <Plus className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
+              New Interview
+            </Button>
+          </Link>
         </div>
       </header>
 
@@ -41,7 +46,7 @@ export default function HomePage() {
             <h2 className="text-sm font-semibold text-primary">System Verification</h2>
             <div className="flex items-center gap-1.5 text-xs text-muted">
               <ShieldCheck className="w-3.5 h-3.5 text-success" />
-              <span>Core Foundation Ready</span>
+              <span>Foundation Active</span>
             </div>
           </div>
 
@@ -63,10 +68,10 @@ export default function HomePage() {
             </div>
 
             <div className="p-3 rounded-control bg-base border border-border">
-              <div className="text-xs text-muted">Design System</div>
-              <div className="text-sm font-medium mt-1">Carbon / Gunmetal / Gold</div>
+              <div className="text-xs text-muted">Collab Server</div>
+              <div className="text-sm font-medium mt-1">Hocuspocus + Yjs</div>
               <div className="mt-2">
-                <Badge variant="accent">Tokens Active</Badge>
+                <Badge variant="accent">Real-Time Sync</Badge>
               </div>
             </div>
           </div>
@@ -89,10 +94,12 @@ export default function HomePage() {
             title="No interview sessions recorded"
             description="Interviews created through the dashboard will appear here with recording, timeline, and score history."
             action={
-              <Button variant="primary" size="sm">
-                <Plus className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
-                Create First Session
-              </Button>
+              <Link href="/dashboard">
+                <Button variant="primary" size="sm">
+                  <Plus className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
+                  Create First Session
+                </Button>
+              </Link>
             }
           />
 
