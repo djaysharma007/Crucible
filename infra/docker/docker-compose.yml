@@ -1,3 +1,10 @@
+# =============================================================================
+# KEEP FOR LOCAL DEV ONLY - NOT FOR PRODUCTION DEPLOYMENT
+# Production deployment uses:
+# - Neon Serverless Postgres (free tier)
+# - Upstash Redis (free tier)
+# - Supabase Storage (S3-compatible API, free tier)
+# =============================================================================
 services:
   postgres:
     image: postgres:16-alpine
