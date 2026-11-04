@@ -16,6 +16,7 @@ import {
   Video,
   MonitorUp,
   Share2,
+  CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
@@ -30,6 +31,8 @@ import { MediaControls } from '@/components/presence/MediaControls';
 import { ScreenShareTheater } from '@/components/presence/ScreenShareTheater';
 import { RecordingControls } from '@/components/presence/RecordingControls';
 import { useLiveKitRoom } from '@/components/presence/useLiveKitRoom';
+import { InterviewerToolsTabs } from '@/components/interviewer/InterviewerToolsTabs';
+import { EndInterviewModal } from '@/components/interviewer/EndInterviewModal';
 import {
   SupportedLanguage,
   RunCodeResponse,
@@ -101,6 +104,7 @@ function RoomContent() {
   const [screenSharePrompt, setScreenSharePrompt] = React.useState<ScreenShareRequestPayload | null>(null);
   const [isRequestingScreen, setIsRequestingScreen] = React.useState(false);
   const [isScreenTheaterOpen, setIsScreenTheaterOpen] = React.useState(true);
+  const [isEndModalOpen, setIsEndModalOpen] = React.useState(false);
 
   // LiveKit hook (only activates once admitted or when interviewer)
   const shouldConnectLiveKit = Boolean(statusData?.isAdmitted || isInterviewer);
@@ -260,19 +264,8 @@ function RoomContent() {
     }
   };
 
-  const handleEndInterview = async () => {
-    if (!confirm('Are you sure you want to end this interview session? This will lock all edits.')) {
-      return;
-    }
-    try {
-      await apiClient.post(`/interviews/${interviewId}/end`);
-      fetchStatus();
-      if (isInterviewer) {
-        router.push('/dashboard');
-      }
-    } catch (err) {
-      setError((err as Error).message || 'Failed to end interview');
-    }
+  const handleEndInterview = () => {
+    setIsEndModalOpen(true);
   };
 
   // Find active InterviewQuestion item
@@ -480,6 +473,31 @@ function RoomContent() {
           </div>
           <div className="pt-2">
             <Badge variant="secondary">Lobby Active · Auto-refreshing</Badge>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Candidate View When Interview Is Completed
+  if (!isInterviewer && statusData.status === 'completed') {
+    return (
+      <div className="min-h-screen bg-base flex items-center justify-center p-4">
+        <div className="max-w-md w-full border border-border bg-surface rounded-panel p-6 text-center space-y-4">
+          <div className="w-10 h-10 rounded-full bg-accent/15 text-accent flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-primary">Interview Concluded</h2>
+            <p className="text-xs text-muted mt-2 leading-relaxed font-sans">
+              Thank you for participating in today's technical interview. The session has ended, and your code and whiteboard work have been saved.
+            </p>
+            <p className="text-[11px] text-muted/70 mt-1 font-sans">
+              Our hiring team will follow up with feedback and next steps. You may now safely close this tab.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Badge variant="secondary">Session Closed</Badge>
           </div>
         </div>
       </div>
@@ -802,20 +820,16 @@ function RoomContent() {
             />
           </div>
 
-          {/* Interviewer Only Panel (Phase 4 placeholder) */}
+          {/* Interviewer Tools Panel (Phase 4) */}
           {isInterviewer ? (
-            <div className="flex-1 p-3 flex flex-col gap-2 overflow-y-auto">
-              <div className="flex items-center justify-between text-[11px] font-mono text-[#D3D0CB]/60 pb-1 border-b border-[#393E41]">
-                <span className="font-semibold text-[#E2C044]">Interviewer Panel</span>
-                <span className="text-[10px]">Private</span>
-              </div>
-              <p className="text-[11px] text-[#D3D0CB]/60 leading-relaxed font-sans">
-                Timestamped session notes and structured scoring rubrics will be active here during Phase 4. Candidate never sees this panel.
-              </p>
-            </div>
+            <InterviewerToolsTabs
+              interviewId={interviewId}
+              elapsedSeconds={elapsedSeconds}
+            />
           ) : (
-            <div className="flex-1 p-3 flex items-center justify-center text-center text-[11px] text-[#D3D0CB]/40">
-              Session Active
+            <div className="flex-1 p-4 flex flex-col items-center justify-center text-center text-[11px] text-[#D3D0CB]/50 space-y-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Interview In Progress</span>
             </div>
           )}
         </div>
@@ -837,6 +851,17 @@ function RoomContent() {
         isOpen={isAttachModalOpen}
         onClose={() => setIsAttachModalOpen(false)}
         onQuestionAttached={() => fetchStatus()}
+      />
+
+      {/* End Interview Confirmation Modal */}
+      <EndInterviewModal
+        isOpen={isEndModalOpen}
+        onOpenChange={setIsEndModalOpen}
+        interviewId={interviewId}
+        onEnded={() => {
+          fetchStatus();
+          router.push('/dashboard');
+        }}
       />
     </div>
   );

@@ -3,6 +3,8 @@ import { RegisterSchema, LoginSchema } from './schemas/auth.js';
 import { CreateInterviewSchema } from './schemas/interview.js';
 import { RunCodeSchema } from './schemas/execution.js';
 import { SubmitScorecardSchema } from './schemas/scorecard.js';
+import { CreateRubricTemplateSchema } from './schemas/rubric.js';
+import { CreateNoteSchema } from './schemas/notes.js';
 
 describe('Shared Schemas Validation', () => {
   it('validates registration input correctly', () => {
@@ -63,5 +65,47 @@ describe('Shared Schemas Validation', () => {
       ],
     });
     expect(valid.success).toBe(true);
+  });
+
+  it('validates rubric template creation', () => {
+    const valid = CreateRubricTemplateSchema.safeParse({
+      name: 'Core Software Engineering Rubric',
+      criteria: [
+        {
+          name: 'Problem Solving',
+          description: 'Ability to break down problems',
+          weight: 1.0,
+          levelDescriptors: {
+            '1': 'Struggled to understand',
+            '4': 'Optimal approach quickly identified',
+          },
+        },
+      ],
+    });
+    expect(valid.success).toBe(true);
+
+    const invalid = CreateRubricTemplateSchema.safeParse({
+      name: '',
+      criteria: [],
+    });
+    expect(invalid.success).toBe(false);
+  });
+
+  it('validates note creation', () => {
+    const valid = CreateNoteSchema.safeParse({
+      bodyMd: 'Candidate quickly identified the two-pointer approach.',
+      offsetMs: 125000,
+    });
+    expect(valid.success).toBe(true);
+
+    const validAutoOffset = CreateNoteSchema.safeParse({
+      bodyMd: 'Note with auto-computed offset.',
+    });
+    expect(validAutoOffset.success).toBe(true);
+
+    const empty = CreateNoteSchema.safeParse({
+      bodyMd: '',
+    });
+    expect(empty.success).toBe(false);
   });
 });
