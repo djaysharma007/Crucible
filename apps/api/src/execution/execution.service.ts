@@ -7,7 +7,10 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { Judge0Client } from './judge0.client.js';
+import {
+  ExecutionProvider,
+  EXECUTION_PROVIDER,
+} from './execution-provider.interface.js';
 import {
   RunCodeInput,
   RunCustomInput,
@@ -22,7 +25,8 @@ export class ExecutionService {
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(Judge0Client) private readonly judge0Client: Judge0Client,
+    @Inject(EXECUTION_PROVIDER)
+    private readonly executionProvider: ExecutionProvider,
   ) {}
 
   async runTests(
@@ -54,7 +58,8 @@ export class ExecutionService {
       throw new BadRequestException(`Cannot execute code in '${iq.interview.status}' interview`);
     }
 
-    const testCases = iq.question.testCases;
+    // Free plan optimization: cap at max 3 test cases to conserve daily quota
+    const testCases = iq.question.testCases.slice(0, 3);
     if (testCases.length === 0) {
       throw new BadRequestException('No test cases defined for this question');
     }
@@ -62,14 +67,19 @@ export class ExecutionService {
     const visibleResults: TestCaseResult[] = [];
     const hiddenResults: TestCaseResult[] = [];
     let passedCount = 0;
+    let latestQuotaRemaining: number | undefined = undefined;
 
     for (const tc of testCases) {
-      const submission = await this.judge0Client.submit({
+      const submission = await this.executionProvider.submit({
         sourceCode: input.sourceCode,
         language: input.language,
         stdin: tc.input,
         expectedOutput: tc.expectedOutput,
       });
+
+      if (submission.quotaRemaining !== undefined) {
+        latestQuotaRemaining = submission.quotaRemaining;
+      }
 
       if (submission.passed) {
         passedCount++;
@@ -120,13 +130,14 @@ export class ExecutionService {
           allPassed,
           totalCases,
           passedCases: passedCount,
+          quotaRemaining: latestQuotaRemaining,
         } as unknown as Prisma.InputJsonValue,
         durationMs,
       },
     });
 
     this.logger.log(
-      `Code run ${run.id} finished for IQ ${interviewQuestionId}: ${passedCount}/${totalCases} passed in ${durationMs}ms`,
+      `Code run ${run.id} finished for IQ ${interviewQuestionId}: ${passedCount}/${totalCases} passed in ${durationMs}ms (quota remaining: ${latestQuotaRemaining ?? 'unknown'})`,
     );
 
     const response: RunCodeResponse = {
@@ -139,6 +150,7 @@ export class ExecutionService {
       visibleResults,
       hiddenSummary,
       durationMs,
+      quotaRemaining: latestQuotaRemaining,
     };
 
     if (isInterviewer) {
@@ -165,7 +177,7 @@ export class ExecutionService {
       throw new BadRequestException(`Cannot execute code in '${iq.interview.status}' interview`);
     }
 
-    const submission = await this.judge0Client.submit({
+    const submission = await this.executionProvider.submit({
       sourceCode: input.sourceCode,
       language: input.language,
       stdin: input.stdin,
@@ -177,6 +189,7 @@ export class ExecutionService {
       status: submission.statusDescription,
       runtimeMs: submission.runtimeMs,
       memoryKb: submission.memoryKb,
+      quotaRemaining: submission.quotaRemaining,
     };
   }
 
@@ -198,7 +211,7 @@ export class ExecutionService {
         const { hiddenResults: _, ...safeResults } = resultsObj;
         return {
           ...run,
-          results: safeResults,
+          results: safeResults as Prisma.JsonValue,
         };
       }
       return run;

@@ -22,6 +22,7 @@ import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
 import { CodeEditor } from './editor/code-editor';
 import { Whiteboard } from '@/components/whiteboard/Whiteboard';
+import { fetchCollabToken } from '@/lib/collab/collab-token';
 import { QuestionPanel, InterviewQuestionItem } from '@/components/room/QuestionPanel';
 import { RunControls } from '@/components/room/RunControls';
 import { AttachQuestionModal } from '@/components/room/AttachQuestionModal';
@@ -96,6 +97,7 @@ function RoomContent() {
   const [currentCode, setCurrentCode] = React.useState<string>('');
   const [isRunningTests, setIsRunningTests] = React.useState(false);
   const [latestRun, setLatestRun] = React.useState<RunCodeResponse | null>(null);
+  const [quotaAlert, setQuotaAlert] = React.useState<string | null>(null);
   const [isAttachModalOpen, setIsAttachModalOpen] = React.useState(false);
   const [elapsedSeconds, setElapsedSeconds] = React.useState(0);
 
@@ -293,7 +295,14 @@ function RoomContent() {
       );
       setLatestRun(res);
     } catch (err) {
-      alert((err as Error).message || 'Execution error');
+      const msg = (err as Error).message || '';
+      if (msg.toLowerCase().includes('quota') || msg.includes('429')) {
+        setQuotaAlert(
+          'Daily code execution quota reached on the free tier. Please try again tomorrow or run locally using Docker.',
+        );
+      } else {
+        alert(msg || 'Execution error');
+      }
     } finally {
       setIsRunningTests(false);
     }
@@ -729,12 +738,25 @@ function RoomContent() {
 
         {/* Center: Editor (default), switchable to Whiteboard. Run controls beneath. */}
         <div className="flex-1 flex flex-col h-full min-w-0 border-r border-[#393E41]">
-          <div className="flex-1 relative overflow-hidden">
+          <div className="flex-1 relative overflow-hidden flex flex-col">
+            {quotaAlert && (
+              <div className="bg-amber-950/80 border-b border-amber-500/50 text-amber-300 text-xs px-4 py-2 flex items-center justify-between font-mono z-20">
+                <span>{quotaAlert}</span>
+                <button
+                  type="button"
+                  onClick={() => setQuotaAlert(null)}
+                  className="text-amber-400 hover:text-amber-200 underline text-xs font-mono ml-4"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
             {centerView === 'code' ? (
               <CodeEditor
                 key={documentName}
                 documentName={documentName}
-                authToken={tokenParam || 'interviewer-session'}
+                interviewId={interviewId}
+                authToken={() => fetchCollabToken(interviewId)}
                 userName={
                   isInterviewer
                     ? user?.displayName || 'Interviewer'
@@ -765,6 +787,7 @@ function RoomContent() {
             onRunCustom={handleRunCustom}
             isRunning={isRunningTests}
             disabled={statusData.status === 'completed'}
+            quotaRemaining={latestRun?.quotaRemaining}
           />
         </div>
 
