@@ -242,6 +242,31 @@ export class RoomsService {
     return { locked };
   }
 
+  async endInterview(interviewId: string, user: UserSummary) {
+    const interview = await this.prisma.interview.findUnique({
+      where: { id: interviewId },
+    });
+
+    if (!interview) {
+      throw new NotFoundException(`Interview with ID '${interviewId}' not found`);
+    }
+
+    if (interview.interviewerId !== user.id) {
+      throw new ForbiddenException('Only the interviewer can end the interview');
+    }
+
+    const updated = await this.prisma.interview.update({
+      where: { id: interviewId },
+      data: {
+        status: 'completed',
+        endedAt: new Date(),
+      },
+    });
+
+    this.logger.log(`Interview ${interviewId} marked as completed by interviewer ${user.id}`);
+    return updated;
+  }
+
   async isCandidateAdmitted(interviewId: string, candidateId: string): Promise<boolean> {
     const admitted = await this.redis.get(`room:${interviewId}:admitted:${candidateId}`);
     return admitted === 'true';

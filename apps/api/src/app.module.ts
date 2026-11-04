@@ -8,6 +8,9 @@ import { RoomsModule } from './rooms/rooms.module.js';
 import { QuestionsModule } from './questions/questions.module.js';
 import { ExecutionModule } from './execution/execution.module.js';
 import { PresenceModule } from './presence/presence.module.js';
+import { RubricsModule } from './rubrics/rubrics.module.js';
+import { NotesModule } from './notes/notes.module.js';
+import { ScorecardModule } from './scorecard/scorecard.module.js';
 
 @Module({
   imports: [
@@ -20,6 +23,9 @@ import { PresenceModule } from './presence/presence.module.js';
     QuestionsModule,
     ExecutionModule,
     PresenceModule,
+    RubricsModule,
+    NotesModule,
+    ScorecardModule,
   ],
 })
 export class AppModule {}

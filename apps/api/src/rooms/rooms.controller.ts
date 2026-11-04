@@ -107,6 +107,12 @@ export class RoomsController {
     return this.roomsService.setEditorLock(id, body.locked, user);
   }
 
+  @Post(':id/end')
+  @UseGuards(AuthGuard)
+  async endInterview(@CurrentUser() user: UserSummary, @Param('id') id: string) {
+    return this.roomsService.endInterview(id, user);
+  }
+
   @Post(':id/whiteboard/snapshot')
   async saveWhiteboardSnapshot(
     @Param('id') id: string,
