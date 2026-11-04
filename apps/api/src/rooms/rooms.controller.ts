@@ -15,7 +15,8 @@ import { RoomsService } from './rooms.service.js';
 import { AuthService } from '../auth/auth.service.js';
 import { AuthGuard } from '../auth/guards/auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
-import { JoinRoomSchema, AdmitCandidateSchema, UserSummary } from '@crucible/shared';
+import { JoinRoomSchema, AdmitCandidateSchema, CreateSignalSchema, UserSummary } from '@crucible/shared';
+import { RateLimit } from '../common/guards/rate-limit.guard.js';
 
 @Controller('rooms')
 export class RoomsController {
@@ -25,6 +26,7 @@ export class RoomsController {
   ) {}
 
   @Post('join')
+  @RateLimit({ limit: 20, windowSeconds: 60, keyPrefix: 'room_join' })
   async join(@Body() body: unknown, @Res({ passthrough: true }) res: Response) {
     const parseResult = JoinRoomSchema.safeParse(body);
     if (!parseResult.success) {
@@ -145,5 +147,70 @@ export class RoomsController {
 
     const docType = body.docType || 'whiteboard';
     return this.roomsService.saveWhiteboardSnapshot(id, docType, body.snapshot);
+  }
+
+  @Post(':id/signals')
+  @RateLimit({ limit: 60, windowSeconds: 60, keyPrefix: 'room_signals' })
+  async recordSignal(
+    @Param('id') id: string,
+    @Body() body: unknown,
+    @Req() req: Request,
+  ) {
+    const parseResult = CreateSignalSchema.safeParse(body);
+    if (!parseResult.success) {
+      throw new BadRequestException(parseResult.error.errors[0]?.message);
+    }
+
+    // Authenticate participant
+    const interviewerCookie = req.cookies?.['crucible_session'];
+    const candidateCookie = req.cookies?.['crucible_candidate_session'];
+
+    let authenticated = false;
+    if (interviewerCookie) {
+      const user = await this.authService.validateSession(interviewerCookie);
+      if (user) authenticated = true;
+    }
+    if (!authenticated && candidateCookie) {
+      const candidate = this.roomsService.validateCandidateSession(candidateCookie);
+      if (candidate && candidate.interviewId === id) {
+        authenticated = true;
+      }
+    }
+
+    if (!authenticated) {
+      throw new BadRequestException('Participant authentication required to record signals');
+    }
+
+    return this.roomsService.recordSignal(
+      id,
+      parseResult.data.type,
+      parseResult.data.metadata,
+      parseResult.data.offsetMs,
+    );
+  }
+
+  @Get(':id/signals')
+  async getSignals(@Param('id') id: string, @Req() req: Request) {
+    // Authenticate participant
+    const interviewerCookie = req.cookies?.['crucible_session'];
+    const candidateCookie = req.cookies?.['crucible_candidate_session'];
+
+    let authenticated = false;
+    if (interviewerCookie) {
+      const user = await this.authService.validateSession(interviewerCookie);
+      if (user) authenticated = true;
+    }
+    if (!authenticated && candidateCookie) {
+      const candidate = this.roomsService.validateCandidateSession(candidateCookie);
+      if (candidate && candidate.interviewId === id) {
+        authenticated = true;
+      }
+    }
+
+    if (!authenticated) {
+      throw new BadRequestException('Participant authentication required to view signals');
+    }
+
+    return this.roomsService.getSignals(id);
   }
 }

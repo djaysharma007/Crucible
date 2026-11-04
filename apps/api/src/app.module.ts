@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { HealthModule } from './health/health.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RedisModule } from './redis/redis.module.js';
@@ -11,6 +12,7 @@ import { PresenceModule } from './presence/presence.module.js';
 import { RubricsModule } from './rubrics/rubrics.module.js';
 import { NotesModule } from './notes/notes.module.js';
 import { ScorecardModule } from './scorecard/scorecard.module.js';
+import { RateLimitGuard } from './common/guards/rate-limit.guard.js';
 
 @Module({
   imports: [
@@ -26,6 +28,12 @@ import { ScorecardModule } from './scorecard/scorecard.module.js';
     RubricsModule,
     NotesModule,
     ScorecardModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: RateLimitGuard,
+    },
   ],
 })
 export class AppModule {}

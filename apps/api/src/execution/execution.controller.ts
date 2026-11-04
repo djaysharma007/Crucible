@@ -22,6 +22,7 @@ import {
   SUPPORTED_LANGUAGES,
   SupportedLanguage,
 } from '@crucible/shared';
+import { RateLimit } from '../common/guards/rate-limit.guard.js';
 
 @Controller('interview-questions')
 export class ExecutionController {
@@ -71,6 +72,7 @@ export class ExecutionController {
   }
 
   @Post(':iqId/run')
+  @RateLimit({ limit: 15, windowSeconds: 60, keyPrefix: 'code_run' })
   async runCode(
     @Param('iqId') iqId: string,
     @Body() body: unknown,
@@ -87,6 +89,7 @@ export class ExecutionController {
   }
 
   @Post(':iqId/run-custom')
+  @RateLimit({ limit: 15, windowSeconds: 60, keyPrefix: 'code_run_custom' })
   async runCustom(
     @Param('iqId') iqId: string,
     @Body() body: unknown,

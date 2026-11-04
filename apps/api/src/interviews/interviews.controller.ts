@@ -78,6 +78,19 @@ export class InterviewsController {
     return this.interviewsService.getReplay(user, id);
   }
 
+  @Post('cleanup')
+  async cleanupExpired(
+    @Query('retentionDays') retentionDays?: string,
+  ) {
+    const days = retentionDays ? parseInt(retentionDays, 10) : 90;
+    return this.interviewsService.cleanupExpired(isNaN(days) ? 90 : days);
+  }
+
+  @Delete(':id')
+  async delete(@CurrentUser() user: UserSummary, @Param('id') id: string) {
+    return this.interviewsService.delete(user, id);
+  }
+
   @Patch(':id')
   async update(@CurrentUser() user: UserSummary, @Param('id') id: string, @Body() body: unknown) {
     const parseResult = UpdateInterviewSchema.safeParse(body);

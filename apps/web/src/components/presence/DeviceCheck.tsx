@@ -254,6 +254,14 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
           </div>
         </>
       )}
+
+      {/* Transparency & Telemetry Disclosure (Section 6.10 & Section 12) */}
+      <div className="p-2.5 rounded bg-[#393E41]/30 border border-[#393E41] text-[11px] text-[#D3D0CB]/80 space-y-1">
+        <span className="font-semibold text-[#E2C044] block">Transparency Disclosure</span>
+        <p className="leading-snug text-[#D3D0CB]/70 font-sans">
+          To support technical integrity, tab focus, window visibility, and large editor paste events are logged as neutral facts on the timeline. All interview data is retained for 90 days in accordance with data retention standards.
+        </p>
+      </div>
     </div>
   );
 }

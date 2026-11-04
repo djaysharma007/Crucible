@@ -33,6 +33,7 @@ import { RecordingControls } from '@/components/presence/RecordingControls';
 import { useLiveKitRoom } from '@/components/presence/useLiveKitRoom';
 import { InterviewerToolsTabs } from '@/components/interviewer/InterviewerToolsTabs';
 import { EndInterviewModal } from '@/components/interviewer/EndInterviewModal';
+import { useTransparencySignals } from '@/hooks/useTransparencySignals';
 import {
   SupportedLanguage,
   RunCodeResponse,
@@ -119,6 +120,12 @@ function RoomContent() {
     toggleMicrophone,
     toggleScreenShare,
   } = useLiveKitRoom(shouldConnectLiveKit ? interviewId : '');
+
+  // Transparency & integrity telemetry (Section 6.10 & Phase 6 Hardening)
+  useTransparencySignals({
+    interviewId,
+    enabled: Boolean(!isInterviewer && statusData?.isAdmitted),
+  });
 
   const fetchStatus = React.useCallback(async () => {
     try {

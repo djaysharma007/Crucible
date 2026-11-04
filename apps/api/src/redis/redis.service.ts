@@ -98,4 +98,39 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       this.logger.warn(`Redis sRem failed for ${key}: ${(err as Error).message}`);
     }
   }
+
+  async checkRateLimit(
+    key: string,
+    limit: number,
+    windowSeconds: number,
+  ): Promise<{ allowed: boolean; remaining: number; resetSeconds: number; current: number }> {
+    if (!this.client) {
+      return { allowed: true, remaining: limit - 1, resetSeconds: windowSeconds, current: 1 };
+    }
+    try {
+      const multi = this.client.multi();
+      multi.incr(key);
+      multi.ttl(key);
+      const results = await multi.exec();
+
+      const current = typeof results?.[0]?.[1] === 'number' ? results[0][1] : 1;
+      let ttl = typeof results?.[1]?.[1] === 'number' ? results[1][1] : -1;
+
+      if (ttl === -1 || ttl === -2) {
+        await this.client.expire(key, windowSeconds);
+        ttl = windowSeconds;
+      }
+
+      const remaining = Math.max(0, limit - current);
+      return {
+        allowed: current <= limit,
+        remaining,
+        resetSeconds: Math.max(1, ttl),
+        current,
+      };
+    } catch (err) {
+      this.logger.warn(`Redis checkRateLimit failed for ${key}: ${(err as Error).message}`);
+      return { allowed: true, remaining: limit - 1, resetSeconds: windowSeconds, current: 1 };
+    }
+  }
 }

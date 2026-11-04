@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Play, Pause, RotateCcw, Bookmark } from 'lucide-react';
+import { Play, Pause, RotateCcw, Bookmark, Activity } from 'lucide-react';
 import { ReplayTimelineEvent } from '@crucible/shared';
 
 interface TimelineScrubberProps {
@@ -36,10 +36,11 @@ export function TimelineScrubber({
     totalDurationMs > 0 ? Math.min(100, (currentOffsetMs / totalDurationMs) * 100) : 0;
 
   const noteEvents = events.filter((e) => e.type === 'note_marker');
+  const signalEvents = events.filter((e) => e.type === 'signal');
 
   return (
     <div className="bg-[#1E2019] border border-[#393E41] rounded p-3 text-xs text-[#D3D0CB] space-y-2.5 font-mono select-none">
-      {/* Scrubber Track Bar with Note Pins */}
+      {/* Scrubber Track Bar with Note Pins and Signal Pins */}
       <div className="relative w-full h-8 flex items-center group">
         {/* Background rail */}
         <div className="relative w-full h-2 bg-[#393E41]/50 rounded-full cursor-pointer overflow-hidden border border-[#393E41]">
@@ -71,6 +72,36 @@ export function TimelineScrubber({
               title={`Note @ ${formatMs(note.offsetMs)}: ${noteText.slice(0, 50)}`}
             >
               <Bookmark className="w-2.5 h-2.5 text-[#1E2019]" />
+            </button>
+          );
+        })}
+
+        {/* Transparency Signal Markers on Timeline Rail */}
+        {signalEvents.map((sig) => {
+          const pinPercent =
+            totalDurationMs > 0 ? Math.min(99, Math.max(1, (sig.offsetMs / totalDurationMs) * 100)) : 0;
+          const sigType = typeof sig.metadata?.signalType === 'string' ? sig.metadata.signalType : 'signal';
+          const label =
+            sigType === 'paste'
+              ? 'Paste Event'
+              : sigType === 'tab_hidden'
+                ? 'Tab Hidden'
+                : sigType === 'tab_visible'
+                  ? 'Tab Visible'
+                  : sigType === 'window_blur'
+                    ? 'Window Blur'
+                    : 'Window Focus';
+
+          return (
+            <button
+              key={sig.id}
+              type="button"
+              onClick={() => onSeek(sig.offsetMs)}
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-amber-500/80 border border-amber-300 flex items-center justify-center hover:scale-125 transition-transform z-10"
+              style={{ left: `${pinPercent}%` }}
+              title={`Signal @ ${formatMs(sig.offsetMs)}: ${label}`}
+            >
+              <Activity className="w-2 h-2 text-[#1E2019]" />
             </button>
           );
         })}

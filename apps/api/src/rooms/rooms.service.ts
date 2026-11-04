@@ -280,6 +280,54 @@ export class RoomsService {
     }
   }
 
+  async recordSignal(
+    interviewId: string,
+    type: string,
+    metadata: Record<string, unknown>,
+    clientOffsetMs?: number,
+  ) {
+    const interview = await this.prisma.interview.findUnique({
+      where: { id: interviewId },
+    });
+
+    if (!interview) {
+      throw new NotFoundException(`Interview with ID '${interviewId}' not found`);
+    }
+
+    let offsetMs = clientOffsetMs;
+    if (offsetMs === undefined) {
+      const baseTime = interview.startedAt ? interview.startedAt.getTime() : interview.createdAt.getTime();
+      offsetMs = Math.max(0, Date.now() - baseTime);
+    }
+
+    const signal = await this.prisma.signal.create({
+      data: {
+        interviewId,
+        type,
+        metadata: metadata as import('@prisma/client').Prisma.InputJsonValue,
+        offsetMs,
+      },
+    });
+
+    this.logger.log(`Recorded transparency signal '${type}' for interview ${interviewId} at offset ${offsetMs}ms`);
+    return signal;
+  }
+
+  async getSignals(interviewId: string) {
+    const interview = await this.prisma.interview.findUnique({
+      where: { id: interviewId },
+    });
+
+    if (!interview) {
+      throw new NotFoundException(`Interview with ID '${interviewId}' not found`);
+    }
+
+    return this.prisma.signal.findMany({
+      where: { interviewId },
+      orderBy: { offsetMs: 'asc' },
+    });
+  }
+
   private generateCandidateSessionToken(payload: CandidateSessionJwtPayload): string {
     return jwt.sign(payload, this.roomSecret, { expiresIn: '12h' });
   }
