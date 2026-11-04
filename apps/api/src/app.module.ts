@@ -7,6 +7,7 @@ import { InterviewsModule } from './interviews/interviews.module.js';
 import { RoomsModule } from './rooms/rooms.module.js';
 import { QuestionsModule } from './questions/questions.module.js';
 import { ExecutionModule } from './execution/execution.module.js';
+import { PresenceModule } from './presence/presence.module.js';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ExecutionModule } from './execution/execution.module.js';
     RoomsModule,
     QuestionsModule,
     ExecutionModule,
+    PresenceModule,
   ],
 })
 export class AppModule {}

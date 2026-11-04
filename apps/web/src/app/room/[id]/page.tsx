@@ -14,6 +14,8 @@ import {
   Code2,
   PenTool,
   Video,
+  MonitorUp,
+  Share2,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
@@ -22,10 +24,17 @@ import { Whiteboard } from '@/components/whiteboard/Whiteboard';
 import { QuestionPanel, InterviewQuestionItem } from '@/components/room/QuestionPanel';
 import { RunControls } from '@/components/room/RunControls';
 import { AttachQuestionModal } from '@/components/room/AttachQuestionModal';
+import { DeviceCheck } from '@/components/presence/DeviceCheck';
+import { VideoTile } from '@/components/presence/VideoTile';
+import { MediaControls } from '@/components/presence/MediaControls';
+import { ScreenShareTheater } from '@/components/presence/ScreenShareTheater';
+import { RecordingControls } from '@/components/presence/RecordingControls';
+import { useLiveKitRoom } from '@/components/presence/useLiveKitRoom';
 import {
   SupportedLanguage,
   RunCodeResponse,
   RunCustomResponse,
+  RecordingStatusResponse,
 } from '@crucible/shared';
 
 interface RoomStatusResponse {
@@ -43,6 +52,14 @@ interface LobbyCandidate {
   candidateId: string;
   displayName: string;
   joinedAt: string;
+}
+
+interface ScreenShareRequestPayload {
+  interviewId: string;
+  requestedBy: string;
+  target: string;
+  message: string;
+  timestamp: string;
 }
 
 function RoomContent() {
@@ -78,7 +95,26 @@ function RoomContent() {
   const [isAttachModalOpen, setIsAttachModalOpen] = React.useState(false);
   const [elapsedSeconds, setElapsedSeconds] = React.useState(0);
 
+  // Presence & Media State
   const isInterviewer = Boolean(user && !tokenParam);
+  const [recordingStatus, setRecordingStatus] = React.useState<RecordingStatusResponse | null>(null);
+  const [screenSharePrompt, setScreenSharePrompt] = React.useState<ScreenShareRequestPayload | null>(null);
+  const [isRequestingScreen, setIsRequestingScreen] = React.useState(false);
+  const [isScreenTheaterOpen, setIsScreenTheaterOpen] = React.useState(true);
+
+  // LiveKit hook (only activates once admitted or when interviewer)
+  const shouldConnectLiveKit = Boolean(statusData?.isAdmitted || isInterviewer);
+  const {
+    connectionState,
+    participants,
+    isCameraEnabled,
+    isMicEnabled,
+    isScreenSharing,
+    activeScreenShare,
+    toggleCamera,
+    toggleMicrophone,
+    toggleScreenShare,
+  } = useLiveKitRoom(shouldConnectLiveKit ? interviewId : '');
 
   const fetchStatus = React.useCallback(async () => {
     try {
@@ -110,6 +146,28 @@ function RoomContent() {
     }
   }, [interviewId, isInterviewer]);
 
+  const fetchRecordingStatus = React.useCallback(async () => {
+    if (!shouldConnectLiveKit) return;
+    try {
+      const rec = await apiClient<RecordingStatusResponse>(`/rooms/${interviewId}/recording/status`);
+      setRecordingStatus(rec);
+    } catch {
+      // Ignored
+    }
+  }, [interviewId, shouldConnectLiveKit]);
+
+  const fetchScreenShareRequest = React.useCallback(async () => {
+    if (isInterviewer || !statusData?.isAdmitted) return;
+    try {
+      const data = await apiClient<{ request: ScreenShareRequestPayload | null }>(
+        `/rooms/${interviewId}/screenshare/request`,
+      );
+      setScreenSharePrompt(data.request);
+    } catch {
+      // Ignored
+    }
+  }, [interviewId, isInterviewer, statusData?.isAdmitted]);
+
   // Initial load & Polling
   React.useEffect(() => {
     fetchStatus();
@@ -118,10 +176,12 @@ function RoomContent() {
       if (isInterviewer) {
         fetchLobby();
       }
+      fetchRecordingStatus();
+      fetchScreenShareRequest();
     }, 2500);
 
     return () => clearInterval(interval);
-  }, [fetchStatus, fetchLobby, isInterviewer]);
+  }, [fetchStatus, fetchLobby, fetchRecordingStatus, fetchScreenShareRequest, isInterviewer]);
 
   // Elapsed time counter
   React.useEffect(() => {
@@ -261,6 +321,40 @@ function RoomContent() {
     }
   };
 
+  const handleRequestCandidateScreen = async () => {
+    try {
+      setIsRequestingScreen(true);
+      await apiClient.post(`/rooms/${interviewId}/screenshare/request`, {
+        target: 'candidate',
+        message: 'Your interviewer has requested that you share your screen.',
+      });
+      alert('Prompt sent to candidate to share their screen.');
+    } catch (err) {
+      alert((err as Error).message || 'Failed to request candidate screen share');
+    } finally {
+      setIsRequestingScreen(false);
+    }
+  };
+
+  const handleApproveScreenPrompt = async () => {
+    await toggleScreenShare();
+    try {
+      await apiClient.delete(`/rooms/${interviewId}/screenshare/request`);
+      setScreenSharePrompt(null);
+    } catch {
+      // Ignored
+    }
+  };
+
+  const handleDismissScreenPrompt = async () => {
+    try {
+      await apiClient.delete(`/rooms/${interviewId}/screenshare/request`);
+      setScreenSharePrompt(null);
+    } catch {
+      // Ignored
+    }
+  };
+
   if (isLoading || authLoading) {
     return (
       <div className="min-h-screen bg-base p-6 flex flex-col gap-4">
@@ -294,23 +388,25 @@ function RoomContent() {
 
   if (!statusData) return null;
 
-  // Candidate Consent & Join View
+  // Candidate Consent & Join View with Device Check (Section 5.2 Step 2)
   if (!isInterviewer && !statusData.isAdmitted && !candidateJoined) {
     return (
       <div className="min-h-screen bg-base flex items-center justify-center p-4">
-        <div className="max-w-lg w-full border border-border bg-surface rounded-panel p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="max-w-lg w-full border border-border bg-surface rounded-panel p-6 shadow-sm space-y-4">
+          <div className="flex items-center gap-2 mb-2">
             <span className="font-semibold text-sm tracking-tight text-primary">Crucible</span>
             <Badge variant="accent">Technical Interview Room</Badge>
           </div>
 
-          <h1 className="text-lg font-semibold text-primary">Join Interview Room</h1>
-          <p className="text-xs text-muted mt-1">
-            You have been invited to a live technical assessment for{' '}
-            <strong className="text-primary">{statusData.roleTitle || 'Engineering Role'}</strong>.
-          </p>
+          <div>
+            <h1 className="text-lg font-semibold text-primary">Join Interview Room</h1>
+            <p className="text-xs text-muted mt-0.5">
+              You have been invited to a live technical assessment for{' '}
+              <strong className="text-primary">{statusData.roleTitle || 'Engineering Role'}</strong>.
+            </p>
+          </div>
 
-          <form onSubmit={handleCandidateJoin} className="mt-6 space-y-4">
+          <form onSubmit={handleCandidateJoin} className="space-y-4">
             <div>
               <label htmlFor="display-name" className="text-xs font-medium text-muted block mb-1">
                 Your Display Name
@@ -324,6 +420,10 @@ function RoomContent() {
               />
             </div>
 
+            {/* Device Check (Microphone and Camera Preview) */}
+            <DeviceCheck />
+
+            {/* Transparency Notice */}
             <div className="border border-border/80 bg-base p-3.5 rounded-control text-xs space-y-2">
               <div className="flex items-center gap-1.5 font-medium text-primary">
                 <Shield className="w-4 h-4 text-accent" />
@@ -393,8 +493,39 @@ function RoomContent() {
 
   const documentName = activeIQ?.id ? `code:${activeIQ.id}` : `code:${interviewId}`;
 
+  // Find local & remote participant states
+  const localParticipant = participants.find((p) => p.isLocal);
+  const remoteParticipant = participants.find((p) => !p.isLocal);
+
   return (
     <div className="h-screen flex flex-col bg-[#1E2019] text-[#D3D0CB] overflow-hidden">
+      {/* Candidate Screen Share Request Banner */}
+      {screenSharePrompt && !isInterviewer && (
+        <div className="bg-[#E2C044] text-[#1E2019] px-4 py-2 flex items-center justify-between text-xs font-medium z-30 shadow-md">
+          <div className="flex items-center gap-2">
+            <MonitorUp className="w-4 h-4" />
+            <span>{screenSharePrompt.message}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleApproveScreenPrompt}
+              className="px-3 py-1 bg-[#1E2019] text-[#D3D0CB] font-semibold text-xs rounded hover:bg-[#393E41] transition-colors flex items-center gap-1.5"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>Share Screen</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleDismissScreenPrompt}
+              className="px-2 py-1 text-xs text-[#1E2019] hover:underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Interviewer Waiting Candidate Notification Banner */}
       {isInterviewer && waitingCandidates.length > 0 && (
         <div className="bg-[#E2C044]/15 border-b border-[#E2C044]/40 px-4 py-2 flex items-center justify-between text-xs">
@@ -433,6 +564,28 @@ function RoomContent() {
           >
             {statusData.status.toUpperCase()}
           </Badge>
+
+          {/* Media Presence Status Indicator */}
+          <div className="flex items-center gap-1.5 font-mono text-[11px] text-[#D3D0CB]/60">
+            <span
+              className={`w-2 h-2 rounded-full ${
+                connectionState === 'connected'
+                  ? 'bg-emerald-400'
+                  : connectionState === 'connecting'
+                  ? 'bg-amber-400 animate-pulse'
+                  : 'bg-[#587B7F]'
+              }`}
+            />
+            <span className="capitalize">{connectionState}</span>
+          </div>
+
+          {/* Cloud Recording Status & Double-Consent Indicator */}
+          <RecordingControls
+            interviewId={interviewId}
+            isInterviewer={isInterviewer}
+            recordingStatus={recordingStatus}
+            onStatusChange={fetchRecordingStatus}
+          />
         </div>
 
         {/* Center: Workspace Toggle & Timer */}
@@ -474,6 +627,19 @@ function RoomContent() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
+          {/* Active Screen Share Pill (if screen share is running) */}
+          {activeScreenShare && (
+            <button
+              type="button"
+              onClick={() => setIsScreenTheaterOpen(true)}
+              className="px-2.5 py-1 bg-[#E2C044] text-[#1E2019] font-semibold text-xs rounded flex items-center gap-1.5 transition-colors animate-pulse"
+              title="Click to view shared screen"
+            >
+              <MonitorUp className="w-3.5 h-3.5" />
+              <span>Viewing Screen: {activeScreenShare.participantName}</span>
+            </button>
+          )}
+
           {isInterviewer && (
             <>
               {statusData.status === 'scheduled' && (
@@ -577,27 +743,63 @@ function RoomContent() {
           />
         </div>
 
-        {/* Right: Small video tiles placeholder (Phase 3) & Interviewer panel (Phase 4) */}
+        {/* Right: Video tiles (small), media controls, then interviewer-only panel (Section 13) */}
         <div className="w-72 shrink-0 h-full bg-[#1E2019] flex flex-col overflow-hidden text-xs">
-          {/* Video Tiles Area (Phase 3 placeholder) */}
-          <div className="p-3 border-b border-[#393E41] bg-[#393E41]/10 flex flex-col gap-2">
+          {/* Video Tiles Area */}
+          <div className="p-3 border-b border-[#393E41] bg-[#393E41]/10 flex flex-col gap-2.5">
             <div className="flex items-center justify-between text-[11px] font-mono text-[#D3D0CB]/60">
               <span className="flex items-center gap-1.5 font-medium text-[#D3D0CB]">
                 <Video className="w-3.5 h-3.5 text-[#587B7F]" />
-                Presence & Media
+                Live Video & Audio
               </span>
-              <span className="text-[10px]">Phase 3</span>
+              <span className="text-[10px]">LiveKit SFU</span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="h-20 bg-[#393E41]/30 rounded border border-[#393E41] flex flex-col items-center justify-center text-[10px] text-[#D3D0CB]/50">
-                <span>Interviewer</span>
-                <span className="text-[9px] text-emerald-400">Connected</span>
-              </div>
-              <div className="h-20 bg-[#393E41]/30 rounded border border-[#393E41] flex flex-col items-center justify-center text-[10px] text-[#D3D0CB]/50">
-                <span>Candidate</span>
-                <span className="text-[9px] text-emerald-400">Connected</span>
-              </div>
+
+            {/* Video Tiles for Participants */}
+            <div className="flex flex-col gap-2">
+              {/* Local Participant Tile */}
+              <VideoTile
+                name={isInterviewer ? user?.displayName || 'Interviewer' : candidateNameInput || 'Candidate'}
+                isInterviewer={isInterviewer}
+                videoTrack={localParticipant?.videoTrack || null}
+                audioTrack={localParticipant?.audioTrack || null}
+                isMuted={!isMicEnabled}
+                isSpeaking={Boolean(localParticipant?.isSpeaking)}
+                isLocal={true}
+                isScreenSharing={isScreenSharing}
+              />
+
+              {/* Remote Participant Tile */}
+              <VideoTile
+                name={
+                  remoteParticipant
+                    ? remoteParticipant.name
+                    : isInterviewer
+                    ? statusData.candidateName || 'Candidate'
+                    : 'Interviewer'
+                }
+                isInterviewer={!isInterviewer}
+                videoTrack={remoteParticipant?.videoTrack || null}
+                audioTrack={remoteParticipant?.audioTrack || null}
+                isMuted={Boolean(remoteParticipant?.isMuted)}
+                isSpeaking={Boolean(remoteParticipant?.isSpeaking)}
+                isLocal={false}
+                isScreenSharing={Boolean(remoteParticipant?.screenShareTrack)}
+              />
             </div>
+
+            {/* Media Controls Bar */}
+            <MediaControls
+              isCameraEnabled={isCameraEnabled}
+              isMicEnabled={isMicEnabled}
+              isScreenSharing={isScreenSharing}
+              onToggleCamera={toggleCamera}
+              onToggleMic={toggleMicrophone}
+              onToggleScreenShare={toggleScreenShare}
+              isInterviewer={isInterviewer}
+              onRequestCandidateScreenShare={handleRequestCandidateScreen}
+              isRequestingScreen={isRequestingScreen}
+            />
           </div>
 
           {/* Interviewer Only Panel (Phase 4 placeholder) */}
@@ -618,6 +820,16 @@ function RoomContent() {
           )}
         </div>
       </main>
+
+      {/* Screen Share Expanded Theater View */}
+      {activeScreenShare && isScreenTheaterOpen && (
+        <ScreenShareTheater
+          participantName={activeScreenShare.participantName}
+          isInterviewer={activeScreenShare.isInterviewer}
+          track={activeScreenShare.track}
+          onClose={() => setIsScreenTheaterOpen(false)}
+        />
+      )}
 
       {/* Attach Question Modal */}
       <AttachQuestionModal
