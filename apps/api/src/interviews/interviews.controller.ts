@@ -46,9 +46,36 @@ export class InterviewsController {
     return this.interviewsService.findAll(user, parseResult.data);
   }
 
+  @Get('stats')
+  async getStats(@CurrentUser() user: UserSummary) {
+    return this.interviewsService.getStats(user);
+  }
+
+  @Get('compare')
+  async compare(
+    @CurrentUser() user: UserSummary,
+    @Query('id1') id1: string,
+    @Query('id2') id2: string,
+  ) {
+    if (!id1 || !id2) {
+      throw new BadRequestException('Both id1 and id2 query parameters are required for candidate comparison');
+    }
+    return this.interviewsService.compare(user, id1, id2);
+  }
+
   @Get(':id')
   async findOne(@CurrentUser() user: UserSummary, @Param('id') id: string) {
     return this.interviewsService.findOne(user, id);
+  }
+
+  @Get(':id/detail')
+  async getDetail(@CurrentUser() user: UserSummary, @Param('id') id: string) {
+    return this.interviewsService.getDetail(user, id);
+  }
+
+  @Get(':id/replay')
+  async getReplay(@CurrentUser() user: UserSummary, @Param('id') id: string) {
+    return this.interviewsService.getReplay(user, id);
   }
 
   @Patch(':id')

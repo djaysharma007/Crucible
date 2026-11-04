@@ -13,6 +13,12 @@ import {
   UpdateInterviewInput,
   InterviewFilterInput,
   UserSummary,
+  InterviewStatsResponse,
+  InterviewDetailResponse,
+  ReplayTimelineResponse,
+  ReplayTimelineEvent,
+  CandidateComparisonResponse,
+  Recommendation,
 } from '@crucible/shared';
 
 @Injectable()
@@ -269,5 +275,307 @@ export class InterviewsService {
     });
 
     return { success: true };
+  }
+
+  async getStats(user: UserSummary): Promise<InterviewStatsResponse> {
+    const interviews = await this.prisma.interview.findMany({
+      where: { interviewerId: user.id },
+      include: { scorecard: true },
+    });
+
+    const totalInterviews = interviews.length;
+    const completed = interviews.filter((i) => i.status === 'completed');
+    const completedInterviews = completed.length;
+
+    let totalDurationMs = 0;
+    let durationCount = 0;
+
+    for (const i of completed) {
+      if (i.startedAt && i.endedAt) {
+        totalDurationMs += Math.max(0, i.endedAt.getTime() - i.startedAt.getTime());
+        durationCount++;
+      }
+    }
+
+    const averageDurationMinutes =
+      durationCount > 0 ? Math.round(totalDurationMs / durationCount / 60000) : 0;
+
+    const recommendationCounts: Record<Recommendation | 'pending', number> = {
+      strong_hire: 0,
+      hire: 0,
+      no_hire: 0,
+      strong_no_hire: 0,
+      pending: 0,
+    };
+
+    for (const i of interviews) {
+      if (i.scorecard && i.scorecard.recommendation in recommendationCounts) {
+        recommendationCounts[i.scorecard.recommendation as Recommendation]++;
+      } else {
+        recommendationCounts.pending++;
+      }
+    }
+
+    return {
+      totalInterviews,
+      completedInterviews,
+      averageDurationMinutes,
+      recommendationCounts,
+    };
+  }
+
+  async getDetail(user: UserSummary, id: string): Promise<InterviewDetailResponse> {
+    await this.findOne(user, id);
+
+    const interview = await this.prisma.interview.findUnique({
+      where: { id },
+      include: {
+        interviewQuestions: {
+          include: {
+            question: {
+              include: {
+                languages: true,
+                testCases: true,
+              },
+            },
+            codeRuns: {
+              orderBy: { requestedAt: 'desc' },
+            },
+          },
+          orderBy: { order: 'asc' },
+        },
+        notes: {
+          orderBy: [{ offsetMs: 'asc' }, { createdAt: 'asc' }],
+        },
+        scorecard: {
+          include: {
+            ratings: {
+              include: {
+                criterion: true,
+              },
+            },
+          },
+        },
+        collabSnapshots: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    if (!interview) {
+      throw new NotFoundException(`Interview '${id}' not found`);
+    }
+
+    const startTime = interview.startedAt ? interview.startedAt.getTime() : interview.createdAt.getTime();
+    const endTime = interview.endedAt ? interview.endedAt.getTime() : Date.now();
+    const durationSeconds = Math.max(0, Math.round((endTime - startTime) / 1000));
+
+    return {
+      id: interview.id,
+      candidateName: interview.candidateName,
+      roleTitle: interview.roleTitle,
+      status: interview.status,
+      scheduledAt: interview.scheduledAt ? interview.scheduledAt.toISOString() : null,
+      startedAt: interview.startedAt ? interview.startedAt.toISOString() : null,
+      endedAt: interview.endedAt ? interview.endedAt.toISOString() : null,
+      durationSeconds,
+      createdAt: interview.createdAt.toISOString(),
+      questions: interview.interviewQuestions.map((iq) => {
+        const langConfig = iq.question.languages.find((l) => l.language === iq.language);
+        return {
+          id: iq.id,
+          order: iq.order,
+          language: iq.language,
+          startedAt: iq.startedAt ? iq.startedAt.toISOString() : null,
+          question: {
+            id: iq.question.id,
+            title: iq.question.title,
+            descriptionMd: iq.question.descriptionMd,
+            difficulty: iq.question.difficulty,
+            tags: iq.question.tags,
+            starterCode: langConfig?.starterCode || '',
+            testCasesCount: iq.question.testCases.length,
+          },
+          codeRuns: iq.codeRuns.map((cr) => ({
+            id: cr.id,
+            language: cr.language,
+            sourceSnapshot: cr.sourceSnapshot,
+            results: cr.results,
+            requestedAt: cr.requestedAt.toISOString(),
+            durationMs: cr.durationMs,
+          })),
+        };
+      }),
+      notes: interview.notes.map((n) => ({
+        id: n.id,
+        interviewId: n.interviewId,
+        bodyMd: n.bodyMd,
+        offsetMs: n.offsetMs,
+        createdAt: n.createdAt.toISOString(),
+        updatedAt: n.updatedAt.toISOString(),
+      })),
+      scorecard: interview.scorecard
+        ? {
+            id: interview.scorecard.id,
+            interviewId: interview.scorecard.interviewId,
+            recommendation: interview.scorecard.recommendation as Recommendation,
+            summaryText: interview.scorecard.summaryText,
+            submittedAt: interview.scorecard.submittedAt ? interview.scorecard.submittedAt.toISOString() : null,
+            createdAt: interview.scorecard.createdAt.toISOString(),
+            updatedAt: interview.scorecard.updatedAt.toISOString(),
+            ratings: interview.scorecard.ratings.map((r) => ({
+              id: r.id,
+              scorecardId: r.scorecardId,
+              criterionId: r.criterionId,
+              rating: r.rating,
+              justification: r.justification,
+              criterion: {
+                id: r.criterion.id,
+                name: r.criterion.name,
+                description: r.criterion.description,
+                weight: r.criterion.weight,
+                levelDescriptors: r.criterion.levelDescriptors as Record<string, string>,
+              },
+            })),
+          }
+        : null,
+      whiteboardSnapshots: interview.collabSnapshots.map((s) => ({
+        id: s.id,
+        docType: s.docType,
+        snapshot: Buffer.from(s.payload).toString('utf-8'),
+        offsetMs: s.offsetMs,
+        createdAt: s.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  async getReplay(user: UserSummary, id: string): Promise<ReplayTimelineResponse> {
+    const detail = await this.getDetail(user, id);
+
+    const interview = await this.prisma.interview.findUnique({
+      where: { id },
+      include: { signals: true },
+    });
+
+    const events: ReplayTimelineEvent[] = [];
+
+    // 1. Note markers
+    for (const note of detail.notes) {
+      events.push({
+        id: `note-${note.id}`,
+        type: 'note_marker',
+        offsetMs: note.offsetMs,
+        timestamp: note.createdAt,
+        metadata: {
+          noteId: note.id,
+          bodyMd: note.bodyMd,
+        },
+      });
+    }
+
+    // 2. Code runs
+    for (const q of detail.questions) {
+      for (const cr of q.codeRuns) {
+        const runTime = new Date(cr.requestedAt).getTime();
+        const baseTime = detail.startedAt ? new Date(detail.startedAt).getTime() : new Date(detail.createdAt).getTime();
+        const offsetMs = Math.max(0, runTime - baseTime);
+        events.push({
+          id: `coderun-${cr.id}`,
+          type: 'code_run',
+          offsetMs,
+          timestamp: cr.requestedAt,
+          metadata: {
+            questionTitle: q.question.title,
+            language: cr.language,
+            durationMs: cr.durationMs,
+            sourceSnapshot: cr.sourceSnapshot,
+          },
+        });
+      }
+    }
+
+    // 3. Whiteboard snapshots
+    for (const ws of detail.whiteboardSnapshots) {
+      events.push({
+        id: `whiteboard-${ws.id}`,
+        type: 'whiteboard_snapshot',
+        offsetMs: ws.offsetMs,
+        timestamp: ws.createdAt,
+        metadata: {
+          docType: ws.docType,
+          snapshot: ws.snapshot,
+        },
+      });
+    }
+
+    // 4. Signals
+    if (interview?.signals) {
+      for (const sig of interview.signals) {
+        events.push({
+          id: `signal-${sig.id}`,
+          type: 'signal',
+          offsetMs: sig.offsetMs,
+          timestamp: sig.createdAt.toISOString(),
+          metadata: {
+            signalType: sig.type,
+            data: sig.metadata,
+          },
+        });
+      }
+    }
+
+    // Sort chronologically by offsetMs
+    events.sort((a, b) => a.offsetMs - b.offsetMs);
+
+    return {
+      interviewId: id,
+      totalDurationMs: detail.durationSeconds * 1000,
+      events,
+    };
+  }
+
+  async compare(user: UserSummary, id1: string, id2: string): Promise<CandidateComparisonResponse> {
+    const [detailA, detailB] = await Promise.all([
+      this.getDetail(user, id1),
+      this.getDetail(user, id2),
+    ]);
+
+    // Build unified criteria comparison
+    const criteriaMap = new Map<string, { criterionId: string; name: string; weight: number; ratingA: number | null; ratingB: number | null }>();
+
+    if (detailA.scorecard) {
+      for (const r of detailA.scorecard.ratings) {
+        criteriaMap.set(r.criterionId, {
+          criterionId: r.criterionId,
+          name: r.criterion?.name || 'Criterion',
+          weight: r.criterion?.weight || 1.0,
+          ratingA: r.rating,
+          ratingB: null,
+        });
+      }
+    }
+
+    if (detailB.scorecard) {
+      for (const r of detailB.scorecard.ratings) {
+        const existing = criteriaMap.get(r.criterionId);
+        if (existing) {
+          existing.ratingB = r.rating;
+        } else {
+          criteriaMap.set(r.criterionId, {
+            criterionId: r.criterionId,
+            name: r.criterion?.name || 'Criterion',
+            weight: r.criterion?.weight || 1.0,
+            ratingA: null,
+            ratingB: r.rating,
+          });
+        }
+      }
+    }
+
+    return {
+      interviewA: detailA,
+      interviewB: detailB,
+      criteria: Array.from(criteriaMap.values()),
+    };
   }
 }
