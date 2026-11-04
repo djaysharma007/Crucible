@@ -12,6 +12,7 @@ import { PresenceModule } from './presence/presence.module.js';
 import { RubricsModule } from './rubrics/rubrics.module.js';
 import { NotesModule } from './notes/notes.module.js';
 import { ScorecardModule } from './scorecard/scorecard.module.js';
+import { StorageModule } from './storage/storage.module.js';
 import { RateLimitGuard } from './common/guards/rate-limit.guard.js';
 
 @Module({
@@ -28,6 +29,7 @@ import { RateLimitGuard } from './common/guards/rate-limit.guard.js';
     RubricsModule,
     NotesModule,
     ScorecardModule,
+    StorageModule,
   ],
   providers: [
     {

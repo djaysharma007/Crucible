@@ -123,7 +123,7 @@ export function RecordingControls({
               Cloud Session Recording
             </DialogTitle>
             <DialogDescription className="text-xs text-[#D3D0CB]/70 leading-relaxed">
-              Crucible records technical interviews via LiveKit cloud egress. To protect candidate and interviewer privacy, recording starts only after both parties have explicitly granted consent.
+              Crucible records technical interviews securely to encrypted object storage. To protect candidate and interviewer privacy, recording starts only after both parties have explicitly granted consent.
             </DialogDescription>
           </DialogHeader>
 
