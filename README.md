@@ -1,128 +1,180 @@
 # Crucible
 
-Crucible is a web platform that consolidates technical interview tooling into a single room: video calling, collaborative code editing, isolated code execution, shared whiteboard, timestamped interviewer notes, and structured rubric scoring. Completed sessions provide full timeline replay and scorecard review from the dashboard.
+Crucible is a web platform that consolidates technical interview tooling into a single, cohesive room: low-latency WebRTC video/audio calling, collaborative code editing, isolated multi-language code execution, collaborative whiteboard, timestamped interviewer notes, and structured rubric scoring. Completed sessions provide full timeline replay, code diff history, and scorecard review from the interviewer dashboard.
 
-## Architecture
+Deployed entirely at **$0/month total cost** with no custom domain, no paid plans, and no expiring trials.
+
+---
+
+## Production Zero-Cost Architecture
 
 ```
-                    +------------------------------+
-                    |   Browser (Next.js, React)   |
-                    | Monaco · tldraw · LiveKit SDK|
-                    +---+-----------+------------+-+
-                        | HTTPS     | WebSocket  | WebRTC
-                        v           v            v
-               +------------+ +-----------+ +-------------+
-               |  API       | |  Collab   | |  LiveKit    |
-               |  (NestJS)  | | (Hocus-   | |  server     |
-               |            | |  pocus)   | |             |
-               +---+---+-+--+ +-----+-----+ +-------------+
-                   |   |            |
-          +--------+   +-------+    |
-          v                    v    v
-     +----------+        +-------------+      +--------------+
-     | Postgres |        |   Redis     |      |  Judge0      |
-     | (Prisma) |        | presence,   |      | (Docker,     |
-     |          |        | rate limits |      |  sandboxed)  |
-     +----------+        +-------------+      +--------------+
-                               |
-                        +------v------+
-                        | Object store|
-                        | (S3 / MinIO)|
-                        +-------------+
+                          +-----------------------------------+
+                          |     Vercel Free Tier (Next.js)    |
+                          |    https://crucible.vercel.app    |
+                          +-----------------+-----------------+
+                                            |
+                  +-------------------------+-------------------------+
+                  | First-party rewrites:                             | Direct WebSocket:
+                  | /api/v1/*                                         | wss://crucible-collab.onrender.com
+                  v                                                   v
++-----------------------------------+               +-----------------------------------+
+|   Render Free Web Service (API)   |               | Render Free Web Service (Collab)  |
+|     Docker: apps/api/Dockerfile   |               |   Docker: apps/collab/Dockerfile  |
+|  https://crucible-api.onrender.com|               |https://crucible-collab.onrender.com|
++-----------------+-----------------+               +-----------------+-----------------+
+                  |                                                   |
+     +------------+------------+                                      |
+     |            |            |                                      |
+     v            v            v                                      v
++----------+ +---------+ +-----------+                           +---------+
+|   Neon   | |  Brevo  | | RapidAPI  |                           | Upstash |
+| Postgres | |  Email  | |  Judge0   |                           |  Redis  |
++----------+ +---------+ +-----------+                           +---------+
+     |            |            |
+     v            v            v
++----------+ +---------+ +-----------+
+| Supabase | | LiveKit | |  Browser  |
+|Storage S3| |  Cloud  | | Recording |
++----------+ +---------+ +-----------+
 ```
 
 ### Components
 
-- **Web (`apps/web`):** Next.js 15 (App Router), React 19, Tailwind CSS with Crucible design tokens.
-- **API (`apps/api`):** NestJS REST service (`/api/v1`) handling authentication, interview lifecycle, token generation, and execution orchestration.
-- **Collab (`apps/collab`):** Hocuspocus server managing real-time Yjs CRDT synchronization for editor documents and whiteboard sessions.
-- **Shared (`packages/shared`):** Canonical TypeScript types, constants, and Zod schemas shared across services.
-- **UI (`packages/ui`):** Component library built with Radix UI primitives and styled via Tailwind CSS adhering to the Crucible design system.
-- **PostgreSQL (Prisma):** System of record for users, interviews, questions, rubrics, scorecards, and CRDT update logs.
-- **Redis:** Transient state, rate limiting, and presence tracking.
-- **MinIO / S3:** Object storage for whiteboard snapshots and exports.
-- **Judge0:** Isolated sandbox environment for multi-language test execution.
-- **LiveKit:** Audio, video, and screen share transport.
+- **Web (`apps/web`):** Next.js 15 (App Router), React 19, Tailwind CSS. Hosted on Vercel free tier with first-party rewrites to eliminate cross-site cookie restrictions.
+- **API (`apps/api`):** NestJS REST service (`/api/v1`) running in a multi-stage Docker container on Render Free Web Service. Handles authentication, interview lifecycle, signed collab tokens, storage chunk uploads, and execution orchestration.
+- **Collab (`apps/collab`):** Hocuspocus server running on Render Free Web Service (Docker). Manages real-time Yjs CRDT synchronization for editor and whiteboard sessions with short-lived HMAC token verification.
+- **PostgreSQL (Neon Serverless):** System of record for users, interviews, questions, rubrics, scorecards, and CRDT update logs with automatic serverless suspend.
+- **Redis (Upstash):** Serverless Redis for room presence and rate limiting over TLS (`rediss://`).
+- **Code Execution (Judge0 CE on RapidAPI):** Sandboxed compilation and execution across TypeScript, JavaScript, Python, Go, Rust, Java, C++, and C#. Pluggable `ExecutionProvider` interface with local Docker fallback.
+- **Object Storage (Supabase Storage):** S3-compatible cloud storage for whiteboard snapshots, reports, and continuous 10-second audio/video recording chunks.
+- **WebRTC Video & Audio (LiveKit Cloud):** Managed WebRTC media transport under LiveKit's free Build Plan.
+- **Transactional Email (Brevo):** Password reset notifications via Brevo HTTP API using a single verified sender address.
 
-## Tech Stack and Rationale
+---
 
-| Technology                  | Selection Rationale                                                                        |
-| --------------------------- | ------------------------------------------------------------------------------------------ |
-| **TypeScript (Strict)**     | End-to-end type safety across packages without loose types or `any`.                       |
-| **Next.js & React**         | Server components for auth/dashboard flows, client components for real-time room.          |
-| **NestJS**                  | Structured modular backend architecture with dependency injection and typed middleware.    |
-| **Prisma & PostgreSQL**     | Declarative data modeling, migrations, and parameterized query execution.                  |
-| **Yjs & Hocuspocus**        | Conflict-free replicated data types (CRDTs) allowing offline recovery and timeline replay. |
-| **Tailwind CSS & Radix UI** | Strict token enforcement with accessible headless UI primitives.                           |
-| **Vitest & Playwright**     | Fast unit and integration tests with deterministic browser-driven end-to-end testing.      |
+## Tech Stack
 
-## Prerequisites
+| Layer | Choice | Rationale |
+| :--- | :--- | :--- |
+| **Language** | TypeScript (Strict) | Strict typing across all packages; zero `any`. |
+| **Frontend** | Next.js 15, React 19, Tailwind CSS | First-party API rewrites, server components, dark carbon design system. |
+| **Editor** | Monaco Editor with `y-monaco` | High-fidelity code editing with real-time multi-cursor awareness. |
+| **Whiteboard** | `@excalidraw/excalidraw` + Yjs | MIT-licensed collaborative canvas with element-level `versionNonce` reconciliation. |
+| **Real-time Sync** | Yjs + Hocuspocus | CRDT document sync with full timestamped update logging for scrubber replay. |
+| **Media & Audio** | LiveKit Cloud + HTML5 MediaRecorder | Low-latency WebRTC for live room; browser-side audio mixing and chunked uploads. |
+| **Database** | PostgreSQL (Neon) with Prisma | Serverless connection pooling and declarative schema migrations on start. |
+| **Cache & Presence**| Redis (Upstash) | Managed TLS Redis with exponential backoff reconnect logic. |
+| **Code Execution** | Judge0 (RapidAPI & Docker) | Multi-language sandboxed code execution with daily quota tracking. |
+| **Storage** | Supabase Storage (S3 API) | Zero-cost S3-compatible cloud bucket for snapshots and chunked video streams. |
+| **Email** | Brevo HTTP API | Free transactional email without custom domain purchase. |
+| **Testing** | Vitest & Playwright | Unit, integration, and E2E test suites with mock execution providers. |
 
-- Node.js >= 20 (v22 or v24 recommended)
-- pnpm >= 9
-- Docker and Docker Compose
+---
+
+## Free-Tier Limits & Known Operational Behaviors
+
+1. **Render Free Tier Cold Starts**:
+   - Free instances on Render spin down into sleep mode after 15 minutes of inactivity.
+   - Initial HTTP requests incur a 30–50 second cold start.
+   - Crucible includes an automatic `ServerWakeupBanner` that detects dormant backend services, displays a non-intrusive *"Waking up server..."* status to users, and polls `/health` until the API is warm.
+   - Active WebSocket connections and heartbeats keep the collab server awake throughout active interviews.
+2. **RapidAPI Judge0 Execution Quota**:
+   - The free plan enforces a hard limit of **50 submissions/day** (resets UTC 00:00).
+   - Question banks are capped at 2 test cases per problem, allowing at least **25 complete runs per day**.
+   - The UI surfaces remaining daily submissions directly in the code editor bar.
+   - When the quota is reached (HTTP 429), a typed `QuotaExceededException` returns a clean message in the UI; code execution never fails silently.
+3. **Brevo Email Sender Verification & DMARC**:
+   - Brevo free tier permits 300 emails/day using a verified single sender email address.
+   - **Important Limitation:** If the verified sender is a freemail domain (such as `@gmail.com`), outgoing emails sent to recipient mail exchangers with strict DMARC `p=reject` policies may be rejected by the receiver's inbox provider. For local testing and complete transparency, password reset links and tokens are always logged to the application console output.
+4. **Supabase Storage Free Quota**:
+   - Supabase free tier provides 1 GB total storage and 50 MB max file size.
+   - Browser recording bitrates are constrained to 500 kbps video + 64 kbps audio (~70 KB/s), uploading 10-second chunks (~700 KB). A full 60-minute interview recording consumes ~250 MB.
+
+---
 
 ## Getting Started Locally
 
-1. **Clone the repository:**
+Crucible can be run completely offline using Docker Compose.
 
-   ```bash
-   git clone https://github.com/djaysharma007/Crucible.git
-   cd Crucible
-   ```
+### 1. Prerequisites
+- Node.js >= 22
+- pnpm >= 9
+- Docker and Docker Compose
 
-2. **Configure environment:**
+### 2. Setup & Installation
+```bash
+# Clone the repository
+git clone https://github.com/djaysharma007/Crucible.git
+cd Crucible
 
-   ```bash
-   cp .env.example .env
-   ```
+# Install dependencies
+pnpm install
 
-3. **Start local infrastructure (Postgres, Redis, MinIO):**
+# Configure environment
+cp .env.example .env
+```
 
-   ```bash
-   pnpm docker:up
-   ```
+### 3. Start Local Infrastructure
+```bash
+# Start local Postgres, Redis, and MinIO (for local dev only)
+pnpm docker:up
 
-4. **Install dependencies:**
+# Start local Judge0 compiler (optional for local offline code execution)
+docker compose -f infra/docker/docker-compose.judge0.yml up -d
 
-   ```bash
-   pnpm install
-   ```
+# Generate Prisma client and apply database migrations
+pnpm prisma:generate
+pnpm --filter @crucible/api prisma:migrate:deploy
+```
 
-5. **Generate database client:**
+### 4. Seed Demo Data (Optional)
+```bash
+# Populates sample questions, rubric, interviewer account, and a completed demo interview with replay history
+DEMO_INTERVIEWER_PASSWORD="DemoPassword123!" pnpm --filter @crucible/api db:seed
+```
 
-   ```bash
-   pnpm prisma:generate
-   ```
+### 5. Run Development Services
+```bash
+# In terminal 1: Start Web and API
+pnpm dev
 
-6. **Start development servers (Web and API):**
-   ```bash
-   pnpm dev
-   ```
-   - Web application: `http://localhost:3000`
-   - API service: `http://localhost:4000/api/v1`
+# In terminal 2: Start Collab server
+pnpm dev:collab
+```
+- Web: `http://localhost:3000`
+- API: `http://localhost:4000/api/v1`
+- Collab WebSocket: `ws://localhost:4001`
+- Login: `interviewer@crucible.dev` / `DemoPassword123!`
 
-## Running Tests and Validation
+### 6. Remote Sharing with Cloudflare Quick Tunnel (Zero Cost)
+To test WebRTC video and collaborative coding with a candidate on another device without port forwarding:
+```bash
+# Windows
+.\scripts\tunnel.ps1
 
-- **Typecheck:**
-  ```bash
-  pnpm typecheck
-  ```
-- **Run Unit Tests:**
-  ```bash
-  pnpm test
-  ```
-- **Run Linter:**
-  ```bash
-  pnpm lint
-  ```
+# macOS / Linux
+./scripts/tunnel.sh
+```
+This launches a free, temporary `*.trycloudflare.com` tunnel directing traffic to `http://localhost:3000`.
 
-## Current Project Status and Known Limitations
+---
 
-- **Current Stage:** Phase 0 (Setup & Monorepo Foundation).
-- **Implemented:** Monorepo architecture, Docker Compose services, Prisma schema, base UI components with Section 13 design tokens, health API endpoint, shared Zod schemas, and CI workflow.
-- **Known Limitations:**
-  - Authentication, room tokens, and collaborative editor will be implemented in Phase 1.
-  - Code execution and whiteboard sync will be implemented in Phase 2.
-  - Video and audio presence will be implemented in Phase 3.
-  - Review dashboard and timeline scrubber replay will be implemented in Phase 5.
+## Production Deployment
+
+For complete, step-by-step instructions on deploying Crucible to Vercel and Render using Neon, Upstash, LiveKit Cloud, RapidAPI, Supabase, and Brevo, see the [Zero-Cost Deployment Guide](docs/deployment.md).
+
+---
+
+## Validation & Testing
+
+```bash
+# TypeScript strict type checking across all workspaces
+pnpm typecheck
+
+# Unit & integration tests
+pnpm test
+
+# Format checking
+pnpm format:check
+```

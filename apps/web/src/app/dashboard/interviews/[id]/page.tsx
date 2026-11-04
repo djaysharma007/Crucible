@@ -173,7 +173,7 @@ export default function InterviewDetailPage() {
           <span className="font-semibold text-sm text-primary">{detail.candidateName}</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 print:hidden">
           <Button
             variant="outline"
             size="sm"
@@ -203,7 +203,7 @@ export default function InterviewDetailPage() {
         {/* Candidate & Session Overview Card */}
         <div className="p-5 bg-surface border border-border rounded-panel flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 print:hidden">
               <h1 className="text-xl font-bold tracking-tight text-primary">
                 {detail.candidateName}
               </h1>
@@ -580,7 +580,7 @@ export default function InterviewDetailPage() {
 
                   {/* Integrity Telemetry Stream (Section 6.10) */}
                   <div className="p-4 bg-surface border border-border rounded-panel space-y-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 print:hidden">
                       <Activity className="w-4 h-4 text-accent" />
                       <span className="font-semibold text-xs text-primary">
                         Integrity Telemetry (Transparency Signals)

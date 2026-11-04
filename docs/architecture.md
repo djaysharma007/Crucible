@@ -2,7 +2,7 @@
 
 ## Overview
 
-Crucible is built as a modular monorepo combining Next.js, NestJS, and Hocuspocus with PostgreSQL, Redis, MinIO, Judge0, and LiveKit.
+Crucible is built as a modular monorepo combining Next.js, NestJS, and Hocuspocus with Neon PostgreSQL, Upstash Redis, Supabase Storage (S3 API), Judge0 (RapidAPI free tier in production, local Docker for dev), and LiveKit Cloud.
 
 ## Workspace Layout
 
