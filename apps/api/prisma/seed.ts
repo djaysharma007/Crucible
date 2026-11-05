@@ -41,8 +41,18 @@ async function main() {
     });
     process.stdout.write(`Created demo interviewer account: ${demoEmail} (${interviewer.id})\n`);
   } else {
+    const passwordHash = await argon2.hash(password, {
+      type: argon2.argon2id,
+      memoryCost: 65536,
+      timeCost: 3,
+      parallelism: 4,
+    });
+    interviewer = await prisma.user.update({
+      where: { id: interviewer.id },
+      data: { passwordHash },
+    });
     process.stdout.write(
-      `Demo interviewer account already exists: ${demoEmail} (${interviewer.id})\n`,
+      `Demo interviewer account verified and updated: ${demoEmail} (${interviewer.id})\n`,
     );
   }
 
