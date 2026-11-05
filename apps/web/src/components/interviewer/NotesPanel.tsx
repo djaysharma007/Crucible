@@ -144,7 +144,10 @@ export function NotesPanel({ interviewId, elapsedSeconds }: NotesPanelProps) {
       </div>
 
       {/* Add Note Input Area */}
-      <form onSubmit={handleAddNote} className="p-3 border-t border-[#393E41] bg-[#1E2019] shrink-0 space-y-2">
+      <form
+        onSubmit={handleAddNote}
+        className="p-3 border-t border-[#393E41] bg-[#1E2019] shrink-0 space-y-2"
+      >
         <textarea
           value={newNoteText}
           onChange={(e) => setNewNoteText(e.target.value)}

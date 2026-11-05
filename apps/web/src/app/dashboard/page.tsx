@@ -225,11 +225,7 @@ export default function DashboardPage() {
             <LogOut className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
             Sign Out
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push('/dashboard/questions')}
-          >
+          <Button variant="outline" size="sm" onClick={() => router.push('/dashboard/questions')}>
             <BookOpen className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
             Question Bank
           </Button>

@@ -54,7 +54,9 @@ export function TimelineScrubber({
         {/* Note Markers on Timeline Rail */}
         {noteEvents.map((note) => {
           const pinPercent =
-            totalDurationMs > 0 ? Math.min(99, Math.max(1, (note.offsetMs / totalDurationMs) * 100)) : 0;
+            totalDurationMs > 0
+              ? Math.min(99, Math.max(1, (note.offsetMs / totalDurationMs) * 100))
+              : 0;
           const noteText =
             typeof note.metadata?.bodyMd === 'string'
               ? note.metadata.bodyMd
@@ -79,8 +81,11 @@ export function TimelineScrubber({
         {/* Transparency Signal Markers on Timeline Rail */}
         {signalEvents.map((sig) => {
           const pinPercent =
-            totalDurationMs > 0 ? Math.min(99, Math.max(1, (sig.offsetMs / totalDurationMs) * 100)) : 0;
-          const sigType = typeof sig.metadata?.signalType === 'string' ? sig.metadata.signalType : 'signal';
+            totalDurationMs > 0
+              ? Math.min(99, Math.max(1, (sig.offsetMs / totalDurationMs) * 100))
+              : 0;
+          const sigType =
+            typeof sig.metadata?.signalType === 'string' ? sig.metadata.signalType : 'signal';
           const label =
             sigType === 'paste'
               ? 'Paste Event'
@@ -128,7 +133,11 @@ export function TimelineScrubber({
             className="p-1.5 rounded bg-[#393E41] hover:bg-[#393E41]/80 text-[#D3D0CB] transition-colors border border-[#587B7F]"
             title={isPlaying ? 'Pause Replay' : 'Play Replay'}
           >
-            {isPlaying ? <Pause className="w-3.5 h-3.5 text-[#E2C044]" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
+            {isPlaying ? (
+              <Pause className="w-3.5 h-3.5 text-[#E2C044]" />
+            ) : (
+              <Play className="w-3.5 h-3.5 text-emerald-400" />
+            )}
           </button>
 
           <button

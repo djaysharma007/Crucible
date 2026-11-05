@@ -22,6 +22,7 @@ import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
 import { CodeEditor } from './editor/code-editor';
 import { Whiteboard } from '@/components/whiteboard/Whiteboard';
+import { fetchCollabToken } from '@/lib/collab/collab-token';
 import { QuestionPanel, InterviewQuestionItem } from '@/components/room/QuestionPanel';
 import { RunControls } from '@/components/room/RunControls';
 import { AttachQuestionModal } from '@/components/room/AttachQuestionModal';
@@ -96,13 +97,17 @@ function RoomContent() {
   const [currentCode, setCurrentCode] = React.useState<string>('');
   const [isRunningTests, setIsRunningTests] = React.useState(false);
   const [latestRun, setLatestRun] = React.useState<RunCodeResponse | null>(null);
+  const [quotaAlert, setQuotaAlert] = React.useState<string | null>(null);
   const [isAttachModalOpen, setIsAttachModalOpen] = React.useState(false);
   const [elapsedSeconds, setElapsedSeconds] = React.useState(0);
 
   // Presence & Media State
   const isInterviewer = Boolean(user && !tokenParam);
-  const [recordingStatus, setRecordingStatus] = React.useState<RecordingStatusResponse | null>(null);
-  const [screenSharePrompt, setScreenSharePrompt] = React.useState<ScreenShareRequestPayload | null>(null);
+  const [recordingStatus, setRecordingStatus] = React.useState<RecordingStatusResponse | null>(
+    null,
+  );
+  const [screenSharePrompt, setScreenSharePrompt] =
+    React.useState<ScreenShareRequestPayload | null>(null);
   const [isRequestingScreen, setIsRequestingScreen] = React.useState(false);
   const [isScreenTheaterOpen, setIsScreenTheaterOpen] = React.useState(true);
   const [isEndModalOpen, setIsEndModalOpen] = React.useState(false);
@@ -160,7 +165,9 @@ function RoomContent() {
   const fetchRecordingStatus = React.useCallback(async () => {
     if (!shouldConnectLiveKit) return;
     try {
-      const rec = await apiClient<RecordingStatusResponse>(`/rooms/${interviewId}/recording/status`);
+      const rec = await apiClient<RecordingStatusResponse>(
+        `/rooms/${interviewId}/recording/status`,
+      );
       setRecordingStatus(rec);
     } catch {
       // Ignored
@@ -284,16 +291,20 @@ function RoomContent() {
     if (!activeIQ) return;
     try {
       setIsRunningTests(true);
-      const res = await apiClient.post<RunCodeResponse>(
-        `/interview-questions/${activeIQ.id}/run`,
-        {
-          language: selectedLanguage,
-          sourceCode: currentCode,
-        },
-      );
+      const res = await apiClient.post<RunCodeResponse>(`/interview-questions/${activeIQ.id}/run`, {
+        language: selectedLanguage,
+        sourceCode: currentCode,
+      });
       setLatestRun(res);
     } catch (err) {
-      alert((err as Error).message || 'Execution error');
+      const msg = (err as Error).message || '';
+      if (msg.toLowerCase().includes('quota') || msg.includes('429')) {
+        setQuotaAlert(
+          'Daily code execution quota reached on the free tier. Please try again tomorrow or run locally using Docker.',
+        );
+      } else {
+        alert(msg || 'Execution error');
+      }
     } finally {
       setIsRunningTests(false);
     }
@@ -402,7 +413,8 @@ function RoomContent() {
             <h1 className="text-lg font-semibold text-primary">Join Interview Room</h1>
             <p className="text-xs text-muted mt-0.5">
               You have been invited to a live technical assessment for{' '}
-              <strong className="text-primary">{statusData.roleTitle || 'Engineering Role'}</strong>.
+              <strong className="text-primary">{statusData.roleTitle || 'Engineering Role'}</strong>
+              .
             </p>
           </div>
 
@@ -431,8 +443,8 @@ function RoomContent() {
               </div>
               <p className="text-muted leading-relaxed text-[11px]">
                 To maintain assessment integrity, this interview room records collaborative editor
-                changes, code test execution results, and advisory tab visibility signals. Private notes
-                and internal rubric evaluations remain interviewer-only.
+                changes, code test execution results, and advisory tab visibility signals. Private
+                notes and internal rubric evaluations remain interviewer-only.
               </p>
               <label className="flex items-start gap-2 pt-1 cursor-pointer select-none">
                 <input
@@ -497,10 +509,12 @@ function RoomContent() {
           <div>
             <h2 className="text-base font-semibold text-primary">Interview Concluded</h2>
             <p className="text-xs text-muted mt-2 leading-relaxed font-sans">
-              Thank you for participating in today's technical interview. The session has ended, and your code and whiteboard work have been saved.
+              Thank you for participating in today's technical interview. The session has ended, and
+              your code and whiteboard work have been saved.
             </p>
             <p className="text-[11px] text-muted/70 mt-1 font-sans">
-              Our hiring team will follow up with feedback and next steps. You may now safely close this tab.
+              Our hiring team will follow up with feedback and next steps. You may now safely close
+              this tab.
             </p>
           </div>
           <div className="pt-2">
@@ -583,8 +597,8 @@ function RoomContent() {
               statusData.status === 'live'
                 ? 'accent'
                 : statusData.status === 'completed'
-                ? 'success'
-                : 'default'
+                  ? 'success'
+                  : 'default'
             }
           >
             {statusData.status.toUpperCase()}
@@ -597,8 +611,8 @@ function RoomContent() {
                 connectionState === 'connected'
                   ? 'bg-emerald-400'
                   : connectionState === 'connecting'
-                  ? 'bg-amber-400 animate-pulse'
-                  : 'bg-[#587B7F]'
+                    ? 'bg-amber-400 animate-pulse'
+                    : 'bg-[#587B7F]'
               }`}
             />
             <span className="capitalize">{connectionState}</span>
@@ -729,12 +743,25 @@ function RoomContent() {
 
         {/* Center: Editor (default), switchable to Whiteboard. Run controls beneath. */}
         <div className="flex-1 flex flex-col h-full min-w-0 border-r border-[#393E41]">
-          <div className="flex-1 relative overflow-hidden">
+          <div className="flex-1 relative overflow-hidden flex flex-col">
+            {quotaAlert && (
+              <div className="bg-amber-950/80 border-b border-amber-500/50 text-amber-300 text-xs px-4 py-2 flex items-center justify-between font-mono z-20">
+                <span>{quotaAlert}</span>
+                <button
+                  type="button"
+                  onClick={() => setQuotaAlert(null)}
+                  className="text-amber-400 hover:text-amber-200 underline text-xs font-mono ml-4"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
             {centerView === 'code' ? (
               <CodeEditor
                 key={documentName}
                 documentName={documentName}
-                authToken={tokenParam || 'interviewer-session'}
+                interviewId={interviewId}
+                authToken={() => fetchCollabToken(interviewId)}
                 userName={
                   isInterviewer
                     ? user?.displayName || 'Interviewer'
@@ -752,7 +779,9 @@ function RoomContent() {
                 key={`wb:${activeIQ?.id || 'root'}`}
                 interviewId={interviewId}
                 activeQuestionId={activeIQ?.id}
-                readOnly={!isInterviewer && (statusData.isLocked || statusData.status === 'completed')}
+                readOnly={
+                  !isInterviewer && (statusData.isLocked || statusData.status === 'completed')
+                }
               />
             )}
           </div>
@@ -765,6 +794,7 @@ function RoomContent() {
             onRunCustom={handleRunCustom}
             isRunning={isRunningTests}
             disabled={statusData.status === 'completed'}
+            quotaRemaining={latestRun?.quotaRemaining}
           />
         </div>
 
@@ -784,7 +814,11 @@ function RoomContent() {
             <div className="flex flex-col gap-2">
               {/* Local Participant Tile */}
               <VideoTile
-                name={isInterviewer ? user?.displayName || 'Interviewer' : candidateNameInput || 'Candidate'}
+                name={
+                  isInterviewer
+                    ? user?.displayName || 'Interviewer'
+                    : candidateNameInput || 'Candidate'
+                }
                 isInterviewer={isInterviewer}
                 videoTrack={localParticipant?.videoTrack || null}
                 audioTrack={localParticipant?.audioTrack || null}
@@ -800,8 +834,8 @@ function RoomContent() {
                   remoteParticipant
                     ? remoteParticipant.name
                     : isInterviewer
-                    ? statusData.candidateName || 'Candidate'
-                    : 'Interviewer'
+                      ? statusData.candidateName || 'Candidate'
+                      : 'Interviewer'
                 }
                 isInterviewer={!isInterviewer}
                 videoTrack={remoteParticipant?.videoTrack || null}
@@ -829,10 +863,7 @@ function RoomContent() {
 
           {/* Interviewer Tools Panel (Phase 4) */}
           {isInterviewer ? (
-            <InterviewerToolsTabs
-              interviewId={interviewId}
-              elapsedSeconds={elapsedSeconds}
-            />
+            <InterviewerToolsTabs interviewId={interviewId} elapsedSeconds={elapsedSeconds} />
           ) : (
             <div className="flex-1 p-4 flex flex-col items-center justify-center text-center text-[11px] text-[#D3D0CB]/50 space-y-1">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />

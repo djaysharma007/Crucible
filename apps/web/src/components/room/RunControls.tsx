@@ -11,6 +11,7 @@ interface RunControlsProps {
   onRunCustom: (stdin: string) => Promise<RunCustomResponse>;
   isRunning: boolean;
   disabled?: boolean;
+  quotaRemaining?: number | null;
 }
 
 export function RunControls({
@@ -20,6 +21,7 @@ export function RunControls({
   onRunCustom,
   isRunning,
   disabled = false,
+  quotaRemaining,
 }: RunControlsProps) {
   const [isStdinOpen, setIsStdinOpen] = React.useState(false);
   const [stdinValue, setStdinValue] = React.useState('');
@@ -115,6 +117,18 @@ export function RunControls({
       {/* Main Bar */}
       <div className="flex items-center justify-between px-3 py-2 bg-[#1E2019]">
         <div className="flex items-center gap-2">
+          {quotaRemaining !== undefined && quotaRemaining !== null && (
+            <span
+              className={`text-[11px] font-mono px-2 py-0.5 rounded border ${
+                quotaRemaining <= 5
+                  ? 'bg-rose-950/40 text-rose-400 border-rose-500/40'
+                  : 'bg-[#393E41]/50 text-[#D3D0CB]/70 border-[#393E41]'
+              }`}
+              title="Remaining daily executions on RapidAPI Judge0 free tier"
+            >
+              Daily Quota: {quotaRemaining} left
+            </span>
+          )}
           <label htmlFor="language-select" className="text-xs text-[#D3D0CB]/60 font-mono">
             Language:
           </label>
@@ -130,12 +144,12 @@ export function RunControls({
                 {lang === 'cpp'
                   ? 'C++ (GCC)'
                   : lang === 'javascript'
-                  ? 'JavaScript (Node.js)'
-                  : lang === 'typescript'
-                  ? 'TypeScript'
-                  : lang === 'python'
-                  ? 'Python 3'
-                  : 'Java'}
+                    ? 'JavaScript (Node.js)'
+                    : lang === 'typescript'
+                      ? 'TypeScript'
+                      : lang === 'python'
+                        ? 'Python 3'
+                        : 'Java'}
               </option>
             ))}
           </select>
@@ -152,6 +166,18 @@ export function RunControls({
         </div>
 
         <div className="flex items-center gap-2">
+          {quotaRemaining !== undefined && quotaRemaining !== null && (
+            <span
+              className={`text-[11px] font-mono px-2 py-0.5 rounded border ${
+                quotaRemaining <= 5
+                  ? 'bg-rose-950/40 text-rose-400 border-rose-500/40'
+                  : 'bg-[#393E41]/50 text-[#D3D0CB]/70 border-[#393E41]'
+              }`}
+              title="Remaining daily executions on RapidAPI Judge0 free tier"
+            >
+              Daily Quota: {quotaRemaining} left
+            </span>
+          )}
           <button
             type="button"
             onClick={onRunTests}
@@ -173,4 +199,3 @@ export function RunControls({
     </div>
   );
 }
-

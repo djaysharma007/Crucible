@@ -51,7 +51,13 @@ interface QuestionItem {
   tags: string[];
   createdAt: string;
   languages: Array<{ id: string; language: string; starterCode: string }>;
-  testCases: Array<{ id: string; input: string; expectedOutput: string; isHidden: boolean; order: number }>;
+  testCases: Array<{
+    id: string;
+    input: string;
+    expectedOutput: string;
+    isHidden: boolean;
+    order: number;
+  }>;
 }
 
 export default function QuestionsDashboardPage() {
@@ -237,8 +243,7 @@ export default function QuestionsDashboardPage() {
         q.title.toLowerCase().includes(search.toLowerCase()) ||
         q.tags.some((t) => t.toLowerCase().includes(search.toLowerCase()));
 
-      const matchesDifficulty =
-        difficultyFilter === 'all' || q.difficulty === difficultyFilter;
+      const matchesDifficulty = difficultyFilter === 'all' || q.difficulty === difficultyFilter;
 
       return matchesSearch && matchesDifficulty;
     });
@@ -368,8 +373,8 @@ export default function QuestionsDashboardPage() {
                           q.difficulty === 'easy'
                             ? 'success'
                             : q.difficulty === 'medium'
-                            ? 'warning'
-                            : 'danger'
+                              ? 'warning'
+                              : 'danger'
                         }
                       >
                         {q.difficulty.toUpperCase()}
@@ -388,8 +393,8 @@ export default function QuestionsDashboardPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-xs text-muted font-mono">
-                      {q.testCases.length} cases (
-                      {q.testCases.filter((tc) => tc.isHidden).length} hidden)
+                      {q.testCases.length} cases ({q.testCases.filter((tc) => tc.isHidden).length}{' '}
+                      hidden)
                     </TableCell>
                     <TableCell className="text-xs text-muted font-mono">
                       {q.languages.length} langs
@@ -616,9 +621,7 @@ export default function QuestionsDashboardPage() {
                 className="w-full p-2.5 bg-base border border-border rounded text-xs text-primary font-mono focus:border-accent focus:outline-none"
                 required
               />
-              {importError && (
-                <p className="text-xs text-danger font-sans">{importError}</p>
-              )}
+              {importError && <p className="text-xs text-danger font-sans">{importError}</p>}
             </div>
 
             <DialogFooter>

@@ -24,7 +24,9 @@ export const CreateQuestionSchema = z.object({
   descriptionMd: z.string().min(1, 'Description is required'),
   difficulty: z.enum(QUESTION_DIFFICULTIES),
   tags: z.array(z.string().min(1).max(50)).default([]),
-  languages: z.array(QuestionLanguageSchema).min(1, 'At least one language with starter code is required'),
+  languages: z
+    .array(QuestionLanguageSchema)
+    .min(1, 'At least one language with starter code is required'),
   testCases: z.array(TestCaseSchema).min(1, 'At least one test case is required'),
 });
 
@@ -44,4 +46,3 @@ export type AttachQuestionInput = z.infer<typeof AttachQuestionSchema>;
 
 export const ImportQuestionSchema = CreateQuestionSchema;
 export type ImportQuestionInput = z.infer<typeof ImportQuestionSchema>;
-

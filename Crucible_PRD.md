@@ -133,7 +133,7 @@ This costs the interviewer setup time, splits their attention across tabs, makes
 - P0. Summary shows duration, questions asked, test results per question, and key notes.
 - P0. Replay: timeline scrubber that reconstructs editor and whiteboard state at any time, with play/pause and speed control; note markers are clickable.
 - P1. Compare two candidates on the same question or rubric.
-- P1. Export interview report as PDF.
+- P1. Export interview report as PDF (Implemented via client-side browser print-to-PDF with `@media print` styling; deliberate architectural deviation from server-side rendering to eliminate high-memory Puppeteer/Chromium processes under zero-cost free-tier boundaries).
 - P1. Aggregate stats: interviews per week, recommendation distribution, average duration.
 
 ### 6.10 Transparency Signals
@@ -147,7 +147,7 @@ This costs the interviewer setup time, splits their attention across tabs, makes
 ```
                     ┌──────────────────────────────┐
                     │   Browser (Next.js, React)   │
-                    │ Monaco · tldraw · LiveKit SDK │
+                    │ Monaco · Excalidraw · LiveKit SDK │
                     └──┬───────────┬────────────┬───┘
                        │ HTTPS     │ WebSocket  │ WebRTC
                        ▼           ▼            ▼
@@ -167,7 +167,7 @@ This costs the interviewer setup time, splits their attention across tabs, makes
                               │
                        ┌──────▼──────┐
                        │ Object store│
-                       │ (S3 / MinIO)│
+                       │ (Supabase S3)│
                        └─────────────┘
 ```
 
@@ -194,18 +194,18 @@ This costs the interviewer setup time, splits their attention across tabs, makes
 | Language | TypeScript (strict) across all packages |
 | Frontend | Next.js (App Router), React, Tailwind CSS |
 | Editor | Monaco Editor with y-monaco binding |
-| Whiteboard | tldraw with Yjs sync |
+| Whiteboard | @excalidraw/excalidraw with Yjs sync |
 | Real-time sync | Yjs + Hocuspocus |
-| Media | LiveKit (self-hosted via Docker for development; LiveKit Cloud acceptable for the deployed demo) |
+| Media | LiveKit Cloud Build plan (free) & browser MediaRecorder chunked recording |
 | API | NestJS |
 | Validation | Zod, shared between frontend and backend |
 | Database | PostgreSQL with Prisma |
 | Cache | Redis |
-| Execution | Judge0 (self-hosted) |
-| Storage | S3-compatible (MinIO locally) |
+| Execution | Judge0 CE on RapidAPI (production) / self-hosted Judge0 Docker (local dev) |
+| Storage | S3-compatible (Supabase Storage free tier; MinIO for local dev) |
 | Testing | Vitest (unit), Playwright (end-to-end), Supertest (API) |
 | Tooling | pnpm workspaces, ESLint, Prettier, Husky + lint-staged, Commitlint |
-| Infra | Docker Compose, GitHub Actions CI, deployed on a single VPS behind Caddy (automatic HTTPS) |
+| Infra | Vercel (Web), Render Free Services (API & Collab), GitHub Actions CI, Cloudflare Quick Tunnel |
 
 Pin exact dependency versions. Before adding any library not listed here, stop and ask.
 
@@ -261,7 +261,7 @@ All endpoints are under `/api/v1`. Request and response bodies are validated wit
 ### Review
 - `GET /interviews/:id/replay` (metadata, snapshots index, signals) · `GET /interviews/:id/replay/updates?doc=&from=&to=`
 - `GET /dashboard/stats`
-- `GET /interviews/:id/report.pdf` (P1)
+- `GET /interviews/:id/report.pdf` (P1) (Client-side browser print-to-PDF export via dashboard detail page)
 
 Rate limits apply to auth, join, and run endpoints.
 
@@ -348,8 +348,7 @@ crucible/
 │   └── config/           # ESLint, TS, Tailwind presets
 ├── infra/
 │   ├── docker/           # Compose files, Judge0 config, LiveKit config
-│   └── caddy/
-├── docs/
+│   └──├── docs/
 │   ├── architecture.md
 │   ├── decisions/        # Short ADRs for key choices
 │   └── images/
@@ -387,7 +386,7 @@ crucible/
 - Follow Section 15 exactly.
 - Do not generate placeholder logic, fake data presented as real, or stubs that look finished. If something is not implemented, mark it clearly in the code and in the phase report.
 - Never hardcode secrets, URLs, or magic numbers. Use configuration.
-- Verify every third-party API call against current official documentation. Do not rely on memory for library APIs, since LiveKit, tldraw, Hocuspocus, and Judge0 change often.
+- Verify every third-party API call against current official documentation. Do not rely on memory for library APIs, since LiveKit, Excalidraw, Hocuspocus, and Judge0 change often.
 - Prefer the simplest solution that meets the requirement. No speculative abstractions, no unnecessary design patterns, no over-engineering.
 - No dead code, unused exports, unused dependencies, or leftover scaffolding files. Remove framework boilerplate (default Next.js pages, example components, sample READMEs).
 
@@ -430,7 +429,7 @@ The interface must look hand-designed by an engineer with taste. These are hard 
 ## 18. Build Plan and Acceptance Criteria
 
 ### Phase 0: Setup
-Monorepo, tooling, CI, Docker Compose (Postgres, Redis, MinIO), design tokens, base component library skeleton.
+Monorepo, tooling, CI, Docker Compose (Postgres, Redis, local storage), design tokens, base component library skeleton.
 **Done when:** `pnpm install && pnpm dev` runs web and API; CI passes on an empty feature.
 
 ### Phase 1: Foundation
@@ -456,12 +455,12 @@ Interview list with search, filters, sorting; detail page with all tabs; replay 
 ### Phase 6: Signals and hardening
 Transparency signals, rate limits, security headers, retention and delete, error handling pass, accessibility pass.
 
-### Phase 7: Polish and release
-Deployment on VPS with HTTPS, seed demo data, README, architecture doc, ADRs, demo video, final E2E run.
+### Phase 7: Zero-cost production release
+Zero-cost cloud deployment (Vercel, Render, Neon, Upstash, LiveKit Cloud, RapidAPI Judge0, Supabase S3, Brevo), demo data seeding, README, architecture doc, ADRs, and deployment verification.
 
 ## 19. Deployment
 
-- Single VPS running Docker Compose: web, API, collab, Postgres, Redis, Judge0 (internal network), MinIO or external S3, Caddy reverse proxy.
+- Zero-cost production stack: Web on Vercel free plan (*.vercel.app); API & Collab on Render free web services (*.onrender.com); Neon Postgres; Upstash Redis; Supabase Storage S3; LiveKit Cloud Build plan; RapidAPI Judge0; Brevo single verified sender.
 - LiveKit via LiveKit Cloud or a self-hosted instance with the required UDP ports open.
 - Judge0 requires privileged container settings; isolate it from the rest of the stack and from the internet.
 - Environment-based configuration. Database migrations run on deploy. Automated backups of Postgres.

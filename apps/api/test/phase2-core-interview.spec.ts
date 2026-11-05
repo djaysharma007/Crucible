@@ -6,6 +6,45 @@ import request from 'supertest';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module.js';
 import { AllExceptionsFilter } from '../src/common/filters/http-exception.filter.js';
+import {
+  EXECUTION_PROVIDER,
+  ExecutionProvider,
+} from '../src/execution/execution-provider.interface.js';
+
+const mockExecutionProvider: ExecutionProvider = {
+  async submit(input) {
+    const isError =
+      input.sourceCode.includes('throw new Error') || input.sourceCode.includes('raise Exception');
+    if (isError) {
+      return {
+        stdout: '',
+        stderr: 'RuntimeError: Execution failed in mock sandbox',
+        compileOutput: null,
+        statusId: 11,
+        statusDescription: 'Runtime Error (NZEC)',
+        runtimeMs: 15,
+        memoryKb: 14200,
+        passed: false,
+        quotaRemaining: 49,
+      };
+    }
+    const trimmedExpected = input.expectedOutput?.trim() ?? '';
+    const stdout = trimmedExpected
+      ? `${trimmedExpected}\n`
+      : `Executed with input: ${input.stdin ?? ''}\n`;
+    return {
+      stdout,
+      stderr: null,
+      compileOutput: null,
+      statusId: 3,
+      statusDescription: 'Accepted',
+      runtimeMs: 12,
+      memoryKb: 12400,
+      passed: true,
+      quotaRemaining: 49,
+    };
+  },
+};
 
 describe('Phase 2 Core Interview E2E Test Suite', () => {
   let app: INestApplication;
@@ -20,11 +59,12 @@ describe('Phase 2 Core Interview E2E Test Suite', () => {
   const testPassword = 'StrongPassword123!';
 
   beforeAll(async () => {
-    process.env.MOCK_JUDGE0 = 'true';
-
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(EXECUTION_PROVIDER)
+      .useValue(mockExecutionProvider)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api/v1');
@@ -75,7 +115,8 @@ describe('Phase 2 Core Interview E2E Test Suite', () => {
         languages: [
           {
             language: 'typescript',
-            starterCode: 'function reverse(s: string): string { return s.split("").reverse().join(""); }',
+            starterCode:
+              'function reverse(s: string): string { return s.split("").reverse().join(""); }',
           },
           {
             language: 'python',
@@ -303,4 +344,3 @@ describe('Phase 2 Core Interview E2E Test Suite', () => {
     expect(res.body.docType).toBe(`whiteboard:${interviewQuestionId}`);
   });
 });
-

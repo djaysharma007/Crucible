@@ -15,10 +15,7 @@ import { PresenceService, ParticipantInfo } from './presence.service.js';
 import { AuthService } from '../auth/auth.service.js';
 import { RoomsService } from '../rooms/rooms.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import {
-  RecordingConsentSchema,
-  ScreenShareRequestSchema,
-} from '@crucible/shared';
+import { RecordingConsentSchema, ScreenShareRequestSchema } from '@crucible/shared';
 
 @Controller('rooms/:id')
 export class PresenceController {
@@ -88,11 +85,7 @@ export class PresenceController {
   }
 
   @Post('recording/consent')
-  async setRecordingConsent(
-    @Param('id') id: string,
-    @Body() body: unknown,
-    @Req() req: Request,
-  ) {
+  async setRecordingConsent(@Param('id') id: string, @Body() body: unknown, @Req() req: Request) {
     const participant = await this.resolveParticipant(req, id);
     const parseResult = RecordingConsentSchema.safeParse(body);
     if (!parseResult.success) {
@@ -119,11 +112,7 @@ export class PresenceController {
   }
 
   @Post('screenshare/request')
-  async requestScreenShare(
-    @Param('id') id: string,
-    @Body() body: unknown,
-    @Req() req: Request,
-  ) {
+  async requestScreenShare(@Param('id') id: string, @Body() body: unknown, @Req() req: Request) {
     const participant = await this.resolveParticipant(req, id);
     const parseResult = ScreenShareRequestSchema.safeParse(body);
     if (!parseResult.success) {

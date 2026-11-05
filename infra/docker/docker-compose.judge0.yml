@@ -1,3 +1,7 @@
+# =============================================================================
+# KEEP FOR LOCAL DEV ONLY - NOT FOR PRODUCTION DEPLOYMENT
+# Production deployment uses Judge0 CE on RapidAPI free tier.
+# =============================================================================
 services:
   judge0-server:
     image: judge0/judge0:1.13.1

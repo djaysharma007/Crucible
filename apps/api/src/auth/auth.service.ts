@@ -11,6 +11,7 @@ import jwt from 'jsonwebtoken';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RedisService } from '../redis/redis.service.js';
+import { BrevoEmailService } from './brevo-email.service.js';
 import {
   RegisterInput,
   LoginInput,
@@ -29,11 +30,14 @@ export interface SessionJwtPayload {
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private readonly sessionSecret =
-    process.env.SESSION_SECRET || 'dev_session_secret_change_in_production_min_32_chars';
+    process.env.SESSION_SECRET ||
+    process.env.JWT_SECRET ||
+    'dev_session_secret_change_in_production_min_32_chars';
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(RedisService) private readonly redis: RedisService,
+    @Inject(BrevoEmailService) private readonly emailService: BrevoEmailService,
   ) {}
 
   async register(input: RegisterInput): Promise<{ user: UserSummary; token: string }> {
@@ -129,7 +133,10 @@ export class AuthService {
       const resetToken = randomBytes(32).toString('hex');
       // Token expires in 1 hour (3600s)
       await this.redis.set(`reset_token:${resetToken}`, user.id, 3600);
-      this.logger.log(`Password reset token generated for ${user.email}: ${resetToken}`);
+      if (process.env.LOG_PASSWORD_RESET_LINKS === 'true') {
+        this.logger.log(`Password reset token generated for ${user.email}: ${resetToken}`);
+      }
+      await this.emailService.sendPasswordResetEmail(user.email, resetToken);
     }
 
     return {

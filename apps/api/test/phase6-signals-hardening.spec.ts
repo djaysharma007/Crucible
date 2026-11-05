@@ -37,7 +37,10 @@ describe('Phase 6 Signals and Hardening E2E Test Suite', () => {
         'Content-Security-Policy',
         "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ws: wss:; frame-ancestors 'none';",
       );
-      res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), display-capture=(self)');
+      res.setHeader(
+        'Permissions-Policy',
+        'camera=(self), microphone=(self), display-capture=(self)',
+      );
       next();
     });
 
@@ -196,14 +199,11 @@ describe('Phase 6 Signals and Hardening E2E Test Suite', () => {
         .set('Cookie', interviewerCookie)
         .expect(200);
 
-      const signalEvents = res.body.events.filter(
-        (e: { type: string }) => e.type === 'signal',
-      );
+      const signalEvents = res.body.events.filter((e: { type: string }) => e.type === 'signal');
       expect(signalEvents.length).toBeGreaterThanOrEqual(4);
 
       const pasteEvent = signalEvents.find(
-        (e: { metadata?: { signalType?: string } }) =>
-          e.metadata?.signalType === 'paste',
+        (e: { metadata?: { signalType?: string } }) => e.metadata?.signalType === 'paste',
       );
       expect(pasteEvent).toBeDefined();
       expect(pasteEvent.offsetMs).toBe(25000);

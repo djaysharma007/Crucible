@@ -8,11 +8,23 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    const isTls = redisUrl.startsWith('rediss://');
     try {
       this.client = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,
         enableReadyCheck: true,
         lazyConnect: true,
+        retryStrategy(times) {
+          return Math.min(times * 50, 2000);
+        },
+        tls: isTls ? { rejectUnauthorized: false } : undefined,
+      });
+
+      this.client.on('error', (err) => {
+        this.logger.warn(`Redis connection error: ${err.message}`);
+      });
+      this.client.on('reconnecting', () => {
+        this.logger.log('Reconnecting to Redis...');
       });
 
       this.client

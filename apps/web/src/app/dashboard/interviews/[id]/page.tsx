@@ -30,20 +30,23 @@ import {
 } from '@crucible/ui';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
-import {
-  InterviewDetailResponse,
-  ReplayTimelineResponse,
-  Recommendation,
-} from '@crucible/shared';
+import { InterviewDetailResponse, ReplayTimelineResponse, Recommendation } from '@crucible/shared';
 import { TimelineScrubber } from '@/components/replay/TimelineScrubber';
+import { RecordingPlayer } from '@/components/dashboard/RecordingPlayer';
 
 type DetailTab = 'summary' | 'code' | 'whiteboard' | 'notes' | 'scorecard' | 'replay';
 
 const REC_META: Record<Recommendation, { label: string; color: string }> = {
-  strong_hire: { label: 'Strong Hire', color: 'bg-emerald-950/60 text-emerald-400 border-emerald-500/40' },
+  strong_hire: {
+    label: 'Strong Hire',
+    color: 'bg-emerald-950/60 text-emerald-400 border-emerald-500/40',
+  },
   hire: { label: 'Hire', color: 'bg-teal-950/60 text-teal-400 border-teal-500/40' },
   no_hire: { label: 'No Hire', color: 'bg-amber-950/60 text-amber-400 border-amber-500/40' },
-  strong_no_hire: { label: 'Strong No Hire', color: 'bg-rose-950/60 text-rose-400 border-rose-500/40' },
+  strong_no_hire: {
+    label: 'Strong No Hire',
+    color: 'bg-rose-950/60 text-rose-400 border-rose-500/40',
+  },
 };
 
 export default function InterviewDetailPage() {
@@ -144,7 +147,9 @@ export default function InterviewDetailPage() {
   // Reconstruct Replay States at currentOffsetMs
   const replayCodeRuns = activeQuestion
     ? activeQuestion.codeRuns.filter((cr) => {
-        const baseTime = detail.startedAt ? new Date(detail.startedAt).getTime() : new Date(detail.createdAt).getTime();
+        const baseTime = detail.startedAt
+          ? new Date(detail.startedAt).getTime()
+          : new Date(detail.createdAt).getTime();
         const offset = Math.max(0, new Date(cr.requestedAt).getTime() - baseTime);
         return offset <= currentOffsetMs;
       })
@@ -173,7 +178,7 @@ export default function InterviewDetailPage() {
           <span className="font-semibold text-sm text-primary">{detail.candidateName}</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 print:hidden">
           <Button
             variant="outline"
             size="sm"
@@ -187,11 +192,7 @@ export default function InterviewDetailPage() {
             <Printer className="w-3.5 h-3.5 mr-1.5" />
             Print Report
           </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => router.push(`/room/${detail.id}`)}
-          >
+          <Button variant="secondary" size="sm" onClick={() => router.push(`/room/${detail.id}`)}>
             <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
             Open Room
           </Button>
@@ -203,7 +204,7 @@ export default function InterviewDetailPage() {
         {/* Candidate & Session Overview Card */}
         <div className="p-5 bg-surface border border-border rounded-panel flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 print:hidden">
               <h1 className="text-xl font-bold tracking-tight text-primary">
                 {detail.candidateName}
               </h1>
@@ -216,7 +217,8 @@ export default function InterviewDetailPage() {
                     REC_META[detail.scorecard.recommendation]?.color || 'bg-surface border-border'
                   }`}
                 >
-                  {REC_META[detail.scorecard.recommendation]?.label || detail.scorecard.recommendation}
+                  {REC_META[detail.scorecard.recommendation]?.label ||
+                    detail.scorecard.recommendation}
                 </span>
               )}
             </div>
@@ -303,8 +305,13 @@ export default function InterviewDetailPage() {
                   </div>
                   <div className="space-y-1.5 pt-1">
                     {detail.questions.map((q) => (
-                      <div key={q.id} className="text-xs flex items-center justify-between text-muted">
-                        <span className="truncate max-w-[180px] text-primary">{q.question.title}</span>
+                      <div
+                        key={q.id}
+                        className="text-xs flex items-center justify-between text-muted"
+                      >
+                        <span className="truncate max-w-[180px] text-primary">
+                          {q.question.title}
+                        </span>
                         <span className="font-mono text-[11px]">{q.codeRuns.length} runs</span>
                       </div>
                     ))}
@@ -386,7 +393,9 @@ export default function InterviewDetailPage() {
                                 className="p-2.5 bg-surface border border-border rounded-panel text-xs space-y-1"
                               >
                                 <div className="flex items-center justify-between font-mono text-[11px]">
-                                  <span className="font-semibold text-primary">Run #{activeQuestion.codeRuns.length - i}</span>
+                                  <span className="font-semibold text-primary">
+                                    Run #{activeQuestion.codeRuns.length - i}
+                                  </span>
                                   <span className="text-muted">{cr.durationMs}ms</span>
                                 </div>
                                 <span className="text-[10px] text-muted block">
@@ -414,7 +423,10 @@ export default function InterviewDetailPage() {
               ) : (
                 <div className="grid grid-cols-1 gap-4">
                   {detail.whiteboardSnapshots.map((ws, i) => (
-                    <div key={ws.id} className="p-4 bg-surface border border-border rounded-panel space-y-2">
+                    <div
+                      key={ws.id}
+                      className="p-4 bg-surface border border-border rounded-panel space-y-2"
+                    >
                       <div className="flex items-center justify-between text-xs font-mono text-muted">
                         <span>Snapshot #{detail.whiteboardSnapshots.length - i}</span>
                         <span>{new Date(ws.createdAt).toLocaleTimeString()}</span>
@@ -474,13 +486,18 @@ export default function InterviewDetailPage() {
                   {/* Recommendation Header */}
                   <div className="p-4 bg-surface border border-border rounded-panel flex items-center justify-between">
                     <div>
-                      <span className="text-xs text-muted font-mono block">Overall Recommendation</span>
+                      <span className="text-xs text-muted font-mono block">
+                        Overall Recommendation
+                      </span>
                       <span className="text-base font-bold text-primary mt-1 block">
                         {REC_META[detail.scorecard.recommendation]?.label}
                       </span>
                     </div>
                     <span className="text-xs text-muted font-mono">
-                      Submitted: {detail.scorecard.submittedAt ? new Date(detail.scorecard.submittedAt).toLocaleDateString() : '—'}
+                      Submitted:{' '}
+                      {detail.scorecard.submittedAt
+                        ? new Date(detail.scorecard.submittedAt).toLocaleDateString()
+                        : '—'}
                     </span>
                   </div>
 
@@ -544,6 +561,9 @@ export default function InterviewDetailPage() {
                     events={replay.events}
                   />
 
+                  {/* Assembled Continuous Video Recording Player */}
+                  <RecordingPlayer interviewId={detail.id} />
+
                   {/* Reconstructed Replay Workspace */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {/* Replayed Code State */}
@@ -565,14 +585,18 @@ export default function InterviewDetailPage() {
 
                     {/* Replayed Whiteboard Snapshot */}
                     <div className="space-y-2">
-                      <span className="text-xs font-mono text-muted block">Whiteboard Snapshot at Offset</span>
+                      <span className="text-xs font-mono text-muted block">
+                        Whiteboard Snapshot at Offset
+                      </span>
                       <div className="p-4 bg-[#1E2019] border border-border rounded-panel text-[#D3D0CB] font-mono text-xs min-h-[260px] flex items-center justify-center text-center">
                         {replaySnapshot ? (
                           <pre className="overflow-auto max-h-60 w-full text-left text-[10px]">
                             {replaySnapshot.snapshot.slice(0, 300)}...
                           </pre>
                         ) : (
-                          <span className="text-muted/60">No drawing recorded yet at this timestamp.</span>
+                          <span className="text-muted/60">
+                            No drawing recorded yet at this timestamp.
+                          </span>
                         )}
                       </div>
                     </div>
@@ -580,7 +604,7 @@ export default function InterviewDetailPage() {
 
                   {/* Integrity Telemetry Stream (Section 6.10) */}
                   <div className="p-4 bg-surface border border-border rounded-panel space-y-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 print:hidden">
                       <Activity className="w-4 h-4 text-accent" />
                       <span className="font-semibold text-xs text-primary">
                         Integrity Telemetry (Transparency Signals)
@@ -651,7 +675,8 @@ export default function InterviewDetailPage() {
             <DialogTitle>Delete Interview Session</DialogTitle>
             <DialogDescription>
               Are you sure you want to permanently delete this interview for {detail.candidateName}?
-              This action cannot be undone. All notes, scorecard ratings, code runs, and recordings will be removed.
+              This action cannot be undone. All notes, scorecard ratings, code runs, and recordings
+              will be removed.
             </DialogDescription>
           </DialogHeader>
 

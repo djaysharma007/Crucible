@@ -1,12 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import {
-  Room,
-  RoomEvent,
-  Participant,
-  Track,
-} from 'livekit-client';
+import { Room, RoomEvent, Participant, Track } from 'livekit-client';
 import type { VideoTrack, AudioTrack } from 'livekit-client';
 import { apiClient } from '@/lib/api-client';
 import { LiveKitTokenResponse } from '@crucible/shared';
@@ -97,7 +92,8 @@ export function useLiveKitRoom(interviewId: string) {
     setParticipants(list);
 
     // Check if anyone is screen sharing
-    let foundScreen: { participantName: string; isInterviewer: boolean; track: VideoTrack } | null = null;
+    let foundScreen: { participantName: string; isInterviewer: boolean; track: VideoTrack } | null =
+      null;
     for (const p of list) {
       if (p.screenShareTrack) {
         foundScreen = {
@@ -231,4 +227,3 @@ export function useLiveKitRoom(interviewId: string) {
     toggleScreenShare,
   };
 }
-

@@ -45,6 +45,7 @@ export interface RunCodeResponse {
   };
   hiddenResults?: TestCaseResult[];
   durationMs: number;
+  quotaRemaining?: number;
 }
 
 export interface RunCustomResponse {
@@ -53,4 +54,5 @@ export interface RunCustomResponse {
   status: string;
   runtimeMs: number;
   memoryKb: number;
+  quotaRemaining?: number;
 }

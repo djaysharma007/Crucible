@@ -30,18 +30,13 @@ function formatTime(totalSeconds: number): string {
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
-export function SectionTimer({
-  interviewId,
-  elapsedSeconds,
-  onMarkerCreated,
-}: SectionTimerProps) {
+export function SectionTimer({ interviewId, elapsedSeconds, onMarkerCreated }: SectionTimerProps) {
   const [isLogging, setIsLogging] = React.useState<string | null>(null);
   const [lastLoggedSection, setLastLoggedSection] = React.useState<string | null>(null);
 
   const currentSection =
-    DEFAULT_SECTIONS.find(
-      (sec) => elapsedSeconds >= sec.startSec && elapsedSeconds < sec.endSec,
-    ) || DEFAULT_SECTIONS[DEFAULT_SECTIONS.length - 1];
+    DEFAULT_SECTIONS.find((sec) => elapsedSeconds >= sec.startSec && elapsedSeconds < sec.endSec) ||
+    DEFAULT_SECTIONS[DEFAULT_SECTIONS.length - 1];
 
   const targetDuration = 3600; // 60 mins
   const progressPercent = Math.min(100, Math.round((elapsedSeconds / targetDuration) * 100));
@@ -117,8 +112,8 @@ export function SectionTimer({
                   isCurrent
                     ? 'bg-[#393E41]/40 border-[#E2C044] text-[#D3D0CB]'
                     : isPassed
-                    ? 'bg-[#1E2019] border-[#393E41]/50 text-[#D3D0CB]/50'
-                    : 'bg-[#1E2019] border-[#393E41] text-[#D3D0CB]/70'
+                      ? 'bg-[#1E2019] border-[#393E41]/50 text-[#D3D0CB]/50'
+                      : 'bg-[#1E2019] border-[#393E41] text-[#D3D0CB]/70'
                 }`}
               >
                 <div className="flex items-center gap-2">

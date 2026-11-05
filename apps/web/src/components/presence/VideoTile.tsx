@@ -56,9 +56,7 @@ export function VideoTile({
   return (
     <div
       className={`relative w-full h-28 bg-[#1E2019] rounded border transition-all overflow-hidden flex flex-col justify-end ${
-        isSpeaking
-          ? 'border-[#E2C044] ring-1 ring-[#E2C044]'
-          : 'border-[#393E41]'
+        isSpeaking ? 'border-[#E2C044] ring-1 ring-[#E2C044]' : 'border-[#393E41]'
       }`}
     >
       {/* Remote Audio element (hidden) */}
@@ -107,10 +105,11 @@ export function VideoTile({
 
       {/* Bottom Name Overlay */}
       <div className="relative z-10 bg-[#1E2019]/90 backdrop-blur-sm px-2 py-1 text-[11px] font-mono text-[#D3D0CB] flex items-center justify-between border-t border-[#393E41]/50">
-        <span className="truncate max-w-[140px]">{name} {isLocal && '(You)'}</span>
+        <span className="truncate max-w-[140px]">
+          {name} {isLocal && '(You)'}
+        </span>
         {isSpeaking && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />}
       </div>
     </div>
   );
 }
-

@@ -142,11 +142,7 @@ export class RoomsService {
     };
   }
 
-  async saveWhiteboardSnapshot(
-    interviewId: string,
-    docType: string,
-    snapshotData: string,
-  ) {
+  async saveWhiteboardSnapshot(interviewId: string, docType: string, snapshotData: string) {
     const interview = await this.prisma.interview.findUnique({
       where: { id: interviewId },
     });
@@ -296,7 +292,9 @@ export class RoomsService {
 
     let offsetMs = clientOffsetMs;
     if (offsetMs === undefined) {
-      const baseTime = interview.startedAt ? interview.startedAt.getTime() : interview.createdAt.getTime();
+      const baseTime = interview.startedAt
+        ? interview.startedAt.getTime()
+        : interview.createdAt.getTime();
       offsetMs = Math.max(0, Date.now() - baseTime);
     }
 
@@ -309,7 +307,9 @@ export class RoomsService {
       },
     });
 
-    this.logger.log(`Recorded transparency signal '${type}' for interview ${interviewId} at offset ${offsetMs}ms`);
+    this.logger.log(
+      `Recorded transparency signal '${type}' for interview ${interviewId} at offset ${offsetMs}ms`,
+    );
     return signal;
   }
 
@@ -326,6 +326,26 @@ export class RoomsService {
       where: { interviewId },
       orderBy: { offsetMs: 'asc' },
     });
+  }
+
+  issueCollabToken(
+    interviewId: string,
+    participant: { role: 'interviewer' | 'candidate'; displayName: string; userId?: string },
+  ) {
+    const collabSecret =
+      process.env.COLLAB_TOKEN_SECRET ||
+      process.env.ROOM_TOKEN_SECRET ||
+      'dev_collab_token_secret_32_chars';
+
+    const payload = {
+      sub: participant.userId || participant.displayName,
+      interviewId,
+      role: participant.role,
+      displayName: participant.displayName,
+    };
+
+    const token = jwt.sign(payload, collabSecret, { expiresIn: '15m' });
+    return { token, expiresInSeconds: 900 };
   }
 
   private generateCandidateSessionToken(payload: CandidateSessionJwtPayload): string {

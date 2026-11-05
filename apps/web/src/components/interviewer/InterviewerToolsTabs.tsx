@@ -13,10 +13,7 @@ interface InterviewerToolsTabsProps {
 
 type TabType = 'notes' | 'scorecard' | 'timer';
 
-export function InterviewerToolsTabs({
-  interviewId,
-  elapsedSeconds,
-}: InterviewerToolsTabsProps) {
+export function InterviewerToolsTabs({ interviewId, elapsedSeconds }: InterviewerToolsTabsProps) {
   const [activeTab, setActiveTab] = React.useState<TabType>('notes');
 
   return (
@@ -68,14 +65,9 @@ export function InterviewerToolsTabs({
         {activeTab === 'notes' && (
           <NotesPanel interviewId={interviewId} elapsedSeconds={elapsedSeconds} />
         )}
-        {activeTab === 'scorecard' && (
-          <RubricScorecardPanel interviewId={interviewId} />
-        )}
+        {activeTab === 'scorecard' && <RubricScorecardPanel interviewId={interviewId} />}
         {activeTab === 'timer' && (
-          <SectionTimer
-            interviewId={interviewId}
-            elapsedSeconds={elapsedSeconds}
-          />
+          <SectionTimer interviewId={interviewId} elapsedSeconds={elapsedSeconds} />
         )}
       </div>
     </div>

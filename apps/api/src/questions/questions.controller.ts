@@ -58,11 +58,7 @@ export class QuestionsController {
   }
 
   @Patch(':id')
-  async update(
-    @CurrentUser() user: UserSummary,
-    @Param('id') id: string,
-    @Body() body: unknown,
-  ) {
+  async update(@CurrentUser() user: UserSummary, @Param('id') id: string, @Body() body: unknown) {
     const parseResult = UpdateQuestionSchema.safeParse(body);
     if (!parseResult.success) {
       throw new BadRequestException(parseResult.error.errors[0]?.message);

@@ -188,20 +188,8 @@ int main() {
       {
         input: '[3,2,4]\n6',
         expectedOutput: '[1,2]',
-        isHidden: false,
+        isHidden: true,
         order: 1,
-      },
-      {
-        input: '[3,3]\n6',
-        expectedOutput: '[0,1]',
-        isHidden: true,
-        order: 2,
-      },
-      {
-        input: '[-1,-2,-3,-4,-5]\n-8',
-        expectedOutput: '[2,4]',
-        isHidden: true,
-        order: 3,
       },
     ],
   },
@@ -234,7 +222,7 @@ Output: false
 
 ### Constraints:
 - \`1 <= s.length <= 10^4\`
-- \`s\` consists of parentheses only \`'()[]{}'.\``,
+- \`s\` consists of parentheses only \`'()[]{}'\`.`,
     difficulty: 'easy',
     tags: ['string', 'stack'],
     languages: [
@@ -243,11 +231,11 @@ Output: false
         starterCode: `function isValid(s: string): boolean {
   const stack: string[] = [];
   const map: Record<string, string> = { ')': '(', '}': '{', ']': '[' };
-  for (const ch of s) {
-    if (ch in map) {
-      if (stack.pop() !== map[ch]) return false;
+  for (const c of s) {
+    if (c in map) {
+      if (stack.pop() !== map[c]) return false;
     } else {
-      stack.push(ch);
+      stack.push(c);
     }
   }
   return stack.length === 0;
@@ -255,7 +243,7 @@ Output: false
 
 const fs = require('fs');
 const s = fs.readFileSync(0, 'utf-8').trim();
-console.log(isValid(s).toString());
+console.log(isValid(s));
 `,
       },
       {
@@ -263,11 +251,11 @@ console.log(isValid(s).toString());
         starterCode: `function isValid(s) {
   const stack = [];
   const map = { ')': '(', '}': '{', ']': '[' };
-  for (const ch of s) {
-    if (ch in map) {
-      if (stack.pop() !== map[ch]) return false;
+  for (const c of s) {
+    if (c in map) {
+      if (stack.pop() !== map[c]) return false;
     } else {
-      stack.push(ch);
+      stack.push(c);
     }
   }
   return stack.length === 0;
@@ -275,7 +263,7 @@ console.log(isValid(s).toString());
 
 const fs = require('fs');
 const s = fs.readFileSync(0, 'utf-8').trim();
-console.log(isValid(s).toString());
+console.log(isValid(s));
 `,
       },
       {
@@ -363,30 +351,11 @@ int main() {
         order: 0,
       },
       {
-        input: '()[]{}',
-        expectedOutput: 'true',
-        isHidden: false,
-        order: 1,
-      },
-      {
-        input: '(]',
-        expectedOutput: 'false',
-        isHidden: false,
-        order: 2,
-      },
-      {
         input: '([)]',
         expectedOutput: 'false',
         isHidden: true,
-        order: 3,
-      },
-      {
-        input: '{[]}',
-        expectedOutput: 'true',
-        isHidden: true,
-        order: 4,
+        order: 1,
       },
     ],
   },
 ];
-

@@ -1,16 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import {
-  Video,
-  VideoOff,
-  Mic,
-  MicOff,
-  MonitorUp,
-  MonitorOff,
-  Share2,
-  Loader2,
-} from 'lucide-react';
+import { Video, VideoOff, Mic, MicOff, MonitorUp, MonitorOff, Share2, Loader2 } from 'lucide-react';
 
 interface MediaControlsProps {
   isCameraEnabled: boolean;
@@ -77,11 +68,7 @@ export function MediaControls({
           }`}
           title={isScreenSharing ? 'Stop Screen Share' : 'Share Screen'}
         >
-          {isScreenSharing ? (
-            <MonitorOff className="w-4 h-4" />
-          ) : (
-            <MonitorUp className="w-4 h-4" />
-          )}
+          {isScreenSharing ? <MonitorOff className="w-4 h-4" /> : <MonitorUp className="w-4 h-4" />}
         </button>
       </div>
 
@@ -105,4 +92,3 @@ export function MediaControls({
     </div>
   );
 }
-

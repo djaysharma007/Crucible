@@ -37,8 +37,17 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = process.env.API_PORT || 4000;
-  await app.listen(port);
+  const port = process.env.PORT || process.env.API_PORT || 4000;
+
+  // Root health endpoint for Render zero-downtime healthcheck
+  app.getHttpAdapter().get('/health', (_req: Request, res: Response) => {
+    res.status(200).json({
+      status: 'ok',
+      service: 'crucible-api',
+      timestamp: new Date().toISOString(),
+    });
+  });
+  await app.listen(port, '0.0.0.0');
   logger.log(`Crucible API running on http://localhost:${port}/api/v1`);
 }
 

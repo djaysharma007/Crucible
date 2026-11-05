@@ -5,7 +5,11 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const port = Number(process.env.COLLAB_PORT) || 4001;
+const port = Number(process.env.PORT) || Number(process.env.COLLAB_PORT) || 4001;
+const collabSecret =
+  process.env.COLLAB_TOKEN_SECRET ||
+  process.env.ROOM_TOKEN_SECRET ||
+  'dev_collab_token_secret_32_chars';
 const sessionSecret =
   process.env.SESSION_SECRET || 'dev_session_secret_change_in_production_min_32_chars';
 const roomSecret =
@@ -15,6 +19,10 @@ const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const redis = new Redis(redisUrl, {
   maxRetriesPerRequest: 3,
   lazyConnect: true,
+  retryStrategy(times) {
+    return Math.min(times * 100, 3000);
+  },
+  tls: redisUrl.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined,
 });
 
 redis.connect().catch((err) => {
@@ -29,39 +37,72 @@ export interface CollabUserContext {
 }
 
 export function verifyCollabToken(token: string): CollabUserContext {
-  // First attempt verifying as interviewer session
+  // 1. Primary: Verify signed dedicated collab token
   try {
-    const decoded = jwt.verify(token, sessionSecret) as {
+    const decoded = jwt.verify(token, collabSecret) as {
       sub: string;
-      email: string;
+      interviewId: string;
+      role: 'interviewer' | 'candidate';
       displayName: string;
     };
     return {
       userId: decoded.sub,
-      role: 'interviewer',
+      role: decoded.role,
       displayName: decoded.displayName,
+      interviewId: decoded.interviewId,
     };
   } catch {
-    // Attempt candidate session
+    // 2. Fallback: Interviewer session token
     try {
-      const decoded = jwt.verify(token, roomSecret) as {
-        interviewId: string;
-        role: 'candidate';
+      const decoded = jwt.verify(token, sessionSecret) as {
+        sub: string;
+        email: string;
         displayName: string;
       };
       return {
-        role: 'candidate',
+        userId: decoded.sub,
+        role: 'interviewer',
         displayName: decoded.displayName,
-        interviewId: decoded.interviewId,
       };
     } catch {
-      throw new Error('Unauthorized collaborative connection token');
+      // 3. Fallback: Candidate session token
+      try {
+        const decoded = jwt.verify(token, roomSecret) as {
+          interviewId: string;
+          role: 'candidate';
+          displayName: string;
+        };
+        return {
+          role: 'candidate',
+          displayName: decoded.displayName,
+          interviewId: decoded.interviewId,
+        };
+      } catch {
+        throw new Error('Unauthorized collaborative connection token');
+      }
     }
   }
 }
 
 export const collabServer = Server.configure({
   port,
+  async onRequest(data) {
+    const { request, response } = data;
+    if (request.url === '/health') {
+      response.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      });
+      response.end(
+        JSON.stringify({
+          status: 'ok',
+          service: 'collab',
+          timestamp: new Date().toISOString(),
+        }),
+      );
+      throw undefined;
+    }
+  },
   async onAuthenticate(data) {
     const { token, connection } = data;
 
@@ -73,7 +114,6 @@ export const collabServer = Server.configure({
 
     // If candidate, check if room is locked or interview ended
     if (auth.role === 'candidate') {
-      // documentName format is code:<interviewQuestionId> or whiteboard:<interviewId>
       const interviewId = auth.interviewId;
       if (interviewId) {
         try {
@@ -96,13 +136,12 @@ export const collabServer = Server.configure({
     };
   },
   async onChange(data) {
-    // Phase 2 will implement appending updates to collab_updates table
     return data;
   },
 });
 
 if (process.env.NODE_ENV !== 'test') {
   collabServer.listen().then(() => {
-    process.stdout.write(`Crucible Collab Server running on ws://localhost:${port}\n`);
+    process.stdout.write(`Crucible Collab Server running on port ${port}\n`);
   });
 }
