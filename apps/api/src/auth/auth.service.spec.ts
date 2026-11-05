@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AuthService } from './auth.service.js';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Logger, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RedisService } from '../redis/redis.service.js';
 import { BrevoEmailService } from './brevo-email.service.js';
@@ -90,7 +90,7 @@ describe('AuthService', () => {
 
   it('dispatches reset email on forgotPassword without logging token by default', async () => {
     delete process.env.LOG_PASSWORD_RESET_LINKS;
-    const logSpy = vi.spyOn((authService as any).logger, 'log');
+    const logSpy = vi.spyOn(Logger.prototype, 'log').mockImplementation(() => {});
 
     mockPrisma.user.findUnique.mockResolvedValue({
       id: 'user-reset-1',
@@ -103,11 +103,12 @@ describe('AuthService', () => {
     expect(logSpy).not.toHaveBeenCalledWith(
       expect.stringContaining('Password reset token generated for'),
     );
+    logSpy.mockRestore();
   });
 
   it('logs reset token only when LOG_PASSWORD_RESET_LINKS is explicitly set to true', async () => {
     process.env.LOG_PASSWORD_RESET_LINKS = 'true';
-    const logSpy = vi.spyOn((authService as any).logger, 'log');
+    const logSpy = vi.spyOn(Logger.prototype, 'log').mockImplementation(() => {});
 
     mockPrisma.user.findUnique.mockResolvedValue({
       id: 'user-reset-1',
@@ -119,6 +120,7 @@ describe('AuthService', () => {
       expect.stringContaining('Password reset token generated for interviewer@crucible.dev'),
     );
 
+    logSpy.mockRestore();
     delete process.env.LOG_PASSWORD_RESET_LINKS;
   });
 });

@@ -47,7 +47,8 @@ export function validateAndSortChunks(
   const availableIndices = sorted.map((c) => c.chunkIndex);
 
   // Determine total expected chunks (use expectedTotal if higher than max index + 1)
-  const maxIndex = sorted[sorted.length - 1].chunkIndex;
+  const lastChunk = sorted[sorted.length - 1];
+  const maxIndex = lastChunk ? lastChunk.chunkIndex : 0;
   const total = Math.max(expectedTotal ?? 0, maxIndex + 1);
 
   // Verify contiguous 0..total-1
@@ -67,11 +68,11 @@ export function validateAndSortChunks(
  * while subsequent timeslice chunks contain sequential Clusters. Concatenating
  * them in exact index order forms a single continuous, valid WebM container.
  */
-export function concatenateWebmChunks(buffers: (ArrayBuffer | Uint8Array)[]): Blob {
+export function concatenateWebmChunks(buffers: (ArrayBuffer | BlobPart)[]): Blob {
   if (!buffers || buffers.length === 0) {
     throw new Error('Cannot concatenate empty chunks array');
   }
-  return new Blob(buffers, { type: 'video/webm' });
+  return new Blob(buffers as BlobPart[], { type: 'video/webm' });
 }
 
 export interface AssembleResult {
@@ -103,6 +104,7 @@ export async function assembleRecordingVideo(
 
   for (let i = 0; i < sortedChunks.length; i++) {
     const chunk = sortedChunks[i];
+    if (!chunk) continue;
     // Use relative streaming proxy endpoint to avoid CORS issues
     const targetUrl =
       chunk.streamUrl || `/api/v1/rooms/${interviewId}/recording/chunks/${chunk.chunkIndex}`;

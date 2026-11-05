@@ -122,7 +122,7 @@ export class StorageController {
     const chunks = chunkKeys
       .map((key) => {
         const match = key.match(/chunk_(\d+)\.webm$/);
-        const chunkIndex = match ? parseInt(match[1], 10) : 0;
+        const chunkIndex = match && match[1] ? parseInt(match[1], 10) : 0;
         return {
           chunkIndex,
           key,
