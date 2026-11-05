@@ -5,9 +5,14 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@crucible/ui', '@crucible/shared', '@crucible/config'],
   async rewrites() {
-    const apiUrl =
-      process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-    const baseApi = apiUrl.replace(/\/api\/v1\/?$/, '');
+    const rawTarget =
+      process.env.API_PROXY_TARGET || process.env.API_URL || 'http://localhost:4000';
+    // Normalize target: strip any trailing slash, /api/v1, or /api so path is never doubled
+    const baseApi = rawTarget
+      .replace(/\/api\/v1\/?$/, '')
+      .replace(/\/api\/?$/, '')
+      .replace(/\/+$/, '');
+
     return [
       {
         source: '/api/v1/:path*',
