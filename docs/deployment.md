@@ -160,25 +160,40 @@ Crucible includes a root `render.yaml` specification for Render Blueprints.
 
 ---
 
-## Step 4: Seed Demo Data (Manual Command)
+## Step 4: Seed Demo Data (Manual Command from Laptop)
 
-To populate the database with a ready-to-present interview scenario, complete scorecard, questions, rubric, and timeline replay:
+Because Render free tier does not provide SSH or an interactive shell, run the seed script directly from your laptop against your Neon database using your direct connection string (`DIRECT_URL`, without `-pooler`):
 
-1. Run the seed script locally or against the production database:
-   ```bash
-   DATABASE_URL="postgresql://[user]:[password]@[endpoint].neon.tech/neondb?sslmode=require" \
-   DEMO_INTERVIEWER_PASSWORD="YourSecurePassword123!" \
-   pnpm --filter @crucible/api db:seed
-   ```
-2. Log into `https://[your-project].vercel.app` using:
-   - Email: `interviewer@crucible.dev`
-   - Password: `YourSecurePassword123!`
+**Bash / macOS / Linux:**
+```bash
+DATABASE_URL="postgresql://[user]:[password]@[endpoint].neon.tech/neondb?sslmode=require" \
+DIRECT_URL="postgresql://[user]:[password]@[endpoint].neon.tech/neondb?sslmode=require" \
+DEMO_INTERVIEWER_PASSWORD="YourSecurePassword123!" \
+pnpm --filter @crucible/api prisma db seed
+```
+
+**Windows PowerShell:**
+```powershell
+$env:DATABASE_URL="postgresql://[user]:[password]@[endpoint].neon.tech/neondb?sslmode=require"
+$env:DIRECT_URL="postgresql://[user]:[password]@[endpoint].neon.tech/neondb?sslmode=require"
+$env:DEMO_INTERVIEWER_PASSWORD="YourSecurePassword123!"
+pnpm --filter @crucible/api prisma db seed
+```
+
+*Note:*
+- The seed script is completely idempotent: re-running it updates the demo interviewer's password hash and verifies all records without duplicating any questions, rubrics, or interviews.
+- Never commit passwords or connection strings to git.
+- Log into `https://[your-project].vercel.app` using:
+  - Email: `interviewer@crucible.dev`
+  - Password: `YourSecurePassword123!` (or whichever password you entered above)
 
 ---
 
 ## Free-Tier Behavior & Limitations
 
 - **Render Cold Starts**: Free web services spin down after 15 minutes of inactivity. When a user opens the application, the UI automatically displays a _"Waking up server..."_ banner and polls `/health` until the API is warm (~30-50 seconds).
-- **Collab WebSocket Persistence**: Active WebSocket traffic prevents the collab service from sleeping while an interview is in session.
+- **Collab WebSocket Persistence**: Whether active WebSocket traffic counts as activity to prevent the free collab service from sleeping after 15 minutes is not confirmed by official Render documentation; verified in live testing.
 - **Judge0 Daily Quota**: RapidAPI free plan allows 50 submissions/day. Crucible displays the remaining executions in the editor panel. On 429, a clear banner notifies the candidate that executions are paused until midnight UTC.
-- **Supabase Storage Quota**: Continuous 10-second chunks are encoded at 500 kbps video + 64 kbps audio (~700 KB/chunk). Recordings stay safely within the 1 GB total storage limit.
+- **Supabase Storage Quota & Egress**: Continuous 10-second chunks are encoded at 500 kbps video + 64 kbps audio (~700 KB/chunk). Recordings stay safely within the 1 GB total storage limit. The 5 GB free monthly egress quota supports **~20 full 60-minute recording playbacks** (or ~40 30-minute playbacks).
+- **Recording Playback Assembly**: In WebM, timeslice chunks after the first contain only `Cluster` elements without container headers. The dashboard fetches all chunks in order, validates contiguous indices ($0..N-1$), and concatenates them into a single continuous WebM Blob. Because browser MediaRecorder streams without a two-pass `Cues` index table, duration may show `Infinity` until buffered and forward scrubbing depends on browser keyframe demuxing.
+- **Password Reset Gating**: Set `LOG_PASSWORD_RESET_LINKS=true` in Render service environment variables if you want reset tokens logged to service stdout for quick demo testing without domain DMARC configuration. Default is `false`.

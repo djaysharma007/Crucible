@@ -11,7 +11,7 @@ Crucible delivers high-quality real-time audio, video, and screen sharing during
 An audit of LiveKit Cloud's pricing and documentation for the free **Build Plan** ([LiveKit Pricing](https://livekit.io/pricing)) verified the following official limits:
 
 - **Monthly Cost**: $0 (No credit card required).
-- **WebRTC Participant Minutes**: **10,000 minutes/month** included at $0.
+- **WebRTC Participant Minutes**: LiveKit's current official pricing page ([LiveKit Pricing](https://livekit.io/pricing)) does not publish a fixed participant-minute figure (historical figures cited 5,000 to 10,000 minutes). The plan enforces hard caps on connection bandwidth (50 GB downstream) and 1,000 agent session minutes. Exact participant-minute limits are not confirmed by official docs; verified in live testing.
 - **Data Transfer / Bandwidth**: 50 GB downstream included.
 - **LiveKit Cloud Egress Allowance**:
   - **Transcode Minutes** (RoomComposite / Participant Egress): **60 minutes/month total** (shared with stream import).
@@ -22,7 +22,7 @@ An audit of LiveKit Cloud's pricing and documentation for the free **Build Plan*
 
 ## Decision
 
-1. **Real-time WebRTC**: Retain LiveKit Cloud free Build Plan for audio, video, and screen share delivery. It satisfies all interactive low-latency WebRTC requirements (10,000 participant minutes/month) without server overhead.
+1. **Real-time WebRTC**: Retain LiveKit Cloud free Build Plan for audio, video, and screen share delivery. It satisfies all interactive low-latency WebRTC requirements with 50 GB downstream bandwidth without server overhead.
 2. **Interview Recording**: Implement client-side recording within the interviewer's browser using the HTML5 `MediaRecorder` API:
    - Combine interviewer microphone audio with candidate audio tracks using Web Audio API (`AudioContext` and `ChannelMergerNode`).
    - If screen share is active, combine video tracks; otherwise record composite video/audio.
@@ -32,8 +32,10 @@ An audit of LiveKit Cloud's pricing and documentation for the free **Build Plan*
 3. **Candidate Consent and Active Recording Indicators**:
    - Explicit two-step candidate consent dialog is required before recording starts.
    - Both interviewer and candidate UIs show a prominent, pulsing amber/red `RECORDING IN PROGRESS` indicator throughout the session.
-4. **Playback**:
-   - Replay dashboard streams recorded WebM chunks sequentially or loads finalized recordings directly from Supabase Storage S3.
+4. **Playback & WebM Assembly**:
+   - In WebM/EBML, timeslice chunks after the first contain only `Cluster` elements without container headers, rendering them independently unplayable.
+   - The replay dashboard (`RecordingPlayer`) fetches all chunks in sequential order, validates continuous indexing ($0..N-1$) to catch any missing chunks, concatenates them into a single continuous WebM Blob, and creates an object URL for playback.
+   - Seeking/Duration note: Browser-side `MediaRecorder` generates WebM files without a two-pass `Cues` seek index table; duration may display as `Infinity` until fully buffered, and forward seeking is constrained by browser keyframe decoding.
 
 ## Consequences
 

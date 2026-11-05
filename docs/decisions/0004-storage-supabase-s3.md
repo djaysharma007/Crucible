@@ -9,12 +9,13 @@ Accepted
 Crucible stores interview artifacts, including collaborative whiteboard snapshots, interview feedback exports, and browser-recorded video/audio chunks.
 The previous plan assumed self-hosted MinIO running on a VPS. In a zero-cost architecture without a VPS, a reliable free cloud object store is required.
 
-Verified Supabase Storage Free Tier Limits:
+Verified Supabase Storage Free Tier Limits ([Supabase Pricing](https://supabase.com/pricing) & [Storage Guide](https://supabase.com/docs/guides/storage)):
 
-- **Total Storage**: **1 GB** included.
-- **Monthly Bandwidth (Egress)**: **2 GB/month**.
+- **Total Storage**: **1 GB** included at $0/month.
+- **Monthly Bandwidth (Egress)**: **5 GB/month** included (5 GB cached / 5 GB uncached).
 - **Max File Size**: **50 MB** per upload.
 - **Protocol**: Standard S3-compatible protocol (`https://<project-ref>.supabase.co/storage/v1/s3`).
+- **Recording Playback Capacity**: At 500 kbps video + 64 kbps audio (~70.5 KB/s), a 60-minute interview recording consumes ~250 MB (0.25 GB). The 5 GB free monthly egress quota supports **~20 complete 60-minute interview playbacks** (or ~40 30-minute playbacks) each month.
 
 ## Decision
 

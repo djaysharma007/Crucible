@@ -133,7 +133,7 @@ This costs the interviewer setup time, splits their attention across tabs, makes
 - P0. Summary shows duration, questions asked, test results per question, and key notes.
 - P0. Replay: timeline scrubber that reconstructs editor and whiteboard state at any time, with play/pause and speed control; note markers are clickable.
 - P1. Compare two candidates on the same question or rubric.
-- P1. Export interview report as PDF.
+- P1. Export interview report as PDF (Implemented via client-side browser print-to-PDF with `@media print` styling; deliberate architectural deviation from server-side rendering to eliminate high-memory Puppeteer/Chromium processes under zero-cost free-tier boundaries).
 - P1. Aggregate stats: interviews per week, recommendation distribution, average duration.
 
 ### 6.10 Transparency Signals
@@ -261,7 +261,7 @@ All endpoints are under `/api/v1`. Request and response bodies are validated wit
 ### Review
 - `GET /interviews/:id/replay` (metadata, snapshots index, signals) · `GET /interviews/:id/replay/updates?doc=&from=&to=`
 - `GET /dashboard/stats`
-- `GET /interviews/:id/report.pdf` (P1)
+- `GET /interviews/:id/report.pdf` (P1) (Client-side browser print-to-PDF export via dashboard detail page)
 
 Rate limits apply to auth, join, and run endpoints.
 

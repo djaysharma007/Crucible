@@ -78,7 +78,7 @@ Deployed entirely at **$0/month total cost** with no custom domain, no paid plan
    - Free instances on Render spin down into sleep mode after 15 minutes of inactivity.
    - Initial HTTP requests incur a 30–50 second cold start.
    - Crucible includes an automatic `ServerWakeupBanner` that detects dormant backend services, displays a non-intrusive _"Waking up server..."_ status to users, and polls `/health` until the API is warm.
-   - Active WebSocket connections and heartbeats keep the collab server awake throughout active interviews.
+   - Whether active WebSocket traffic counts as activity to prevent the collab service from sleeping after 15 minutes is not confirmed by official Render documentation; verified in live testing.
 2. **RapidAPI Judge0 Execution Quota**:
    - The free plan enforces a hard limit of **50 submissions/day** (resets UTC 00:00).
    - Question banks are capped at 2 test cases per problem, allowing at least **25 complete runs per day**.
@@ -87,10 +87,18 @@ Deployed entirely at **$0/month total cost** with no custom domain, no paid plan
 3. **Brevo Email Sender Verification & DMARC Restrictions**:
    - Brevo's free plan allows 300 emails/day and permits adding a personal email address (e.g. `@gmail.com`, `@yahoo.com`) as a **Verified Sender** via a one-click confirmation link sent to that inbox, without purchasing a custom domain.
    - **Exact Delivery Limitation:** Major mailbox providers (Google, Yahoo, Microsoft) enforce strict DMARC alignment policies (`p=reject` / `p=quarantine`). When an email is relayed through Brevo's servers with a `From: yourname@gmail.com` header, the SPF and DKIM signatures do not match `gmail.com` DNS records. Consequently, receiving mail servers will **reject or place into spam** messages sent to external inboxes. Real-world delivery from a freemail sender is only accepted by servers without strict DMARC rejection or by the sender's own address.
-   - **Crucible Zero-Cost Fallback:** To ensure zero-cost deployments never block an interviewer due to mailbox DMARC rejections, Crucible's `AuthService` always logs the full password reset token and direct reset URL to the API server standard output (`[AuthService] Password reset token generated for <email>: <token>`). Interviewers can retrieve reset URLs directly from the Render service logs if needed.
-4. **Supabase Storage Free Quota**:
-   - Supabase free tier provides 1 GB total storage and 50 MB max file size.
-   - Browser recording bitrates are constrained to 500 kbps video + 64 kbps audio (~70 KB/s), uploading 10-second chunks (~700 KB). A full 60-minute interview recording consumes ~250 MB.
+   - **Crucible Zero-Cost Fallback:** To ensure zero-cost deployments never block an interviewer due to mailbox DMARC rejections, setting `LOG_PASSWORD_RESET_LINKS=true` on Render prints the full password reset token and direct URL to the API server standard output (`[AuthService] Password reset token generated for <email>: <token>`). Disabled by default (`false`) in production.
+4. **Supabase Storage Free Quota & Recording Playback Limits**:
+   - Supabase free tier provides **1 GB total storage**, **50 MB max per-file size**, and **5 GB monthly egress** ([Supabase Pricing](https://supabase.com/pricing)).
+   - Browser recording bitrates are constrained to 500 kbps video + 64 kbps audio (~70.5 KB/s), uploading 10-second chunks (~700 KB, ~1.4% of the 50 MB per-file limit). A full 60-minute interview recording consumes ~250 MB (0.25 GB).
+   - **Supported Playbacks:** The 5 GB monthly egress allowance supports **~20 full 60-minute interview recording playbacks** (or ~40 30-minute playbacks) each month without exceeding free tier limits.
+   - **Recording Playback & Seeking Behavior:**
+     - Timeslice WebM chunks after the first contain only `Cluster` elements without container headers, rendering them independently unplayable.
+     - The dashboard fetches all chunks for an interview in order, validates contiguous indices ($0..N-1$) with clear error states for missing chunks, and concatenates them into a single continuous WebM Blob for playback.
+     - **Format Limitations:** Because browser `MediaRecorder` streams WebM chunks in real time without a two-pass `Cues` seek index table, the video player may display duration as `Infinity` or estimate until buffered, and forward scrubbing into unbuffered segments depends on browser keyframe demuxing.
+5. **LiveKit Cloud Free Build Plan Limits**:
+   - Official limits ([LiveKit Pricing](https://livekit.io/pricing)): 50 GB downstream bandwidth, 1,000 agent session minutes, 60 minutes transcode/egress hard cap.
+   - Specific WebRTC participant minutes are not confirmed by an official number on the pricing page (reports vary between 5,000 and 10,000 minutes); verified in live testing.
 
 ---
 
