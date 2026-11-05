@@ -23,3 +23,4 @@ echo -e "\033[0;90mPress Ctrl+C to stop the tunnel.\033[0m"
 echo ""
 
 cloudflared tunnel --url http://localhost:3000
+

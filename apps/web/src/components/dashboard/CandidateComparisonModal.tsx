@@ -21,7 +21,10 @@ interface CandidateComparisonModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const REC_BADGE: Record<Recommendation, { label: string; variant: 'accent' | 'secondary' | 'danger' | 'default' }> = {
+const REC_BADGE: Record<
+  Recommendation,
+  { label: string; variant: 'accent' | 'secondary' | 'danger' | 'default' }
+> = {
   strong_hire: { label: 'Strong Hire', variant: 'accent' },
   hire: { label: 'Hire', variant: 'accent' },
   no_hire: { label: 'No Hire', variant: 'danger' },
@@ -87,11 +90,18 @@ export function CandidateComparisonModal({
                     <span className="font-semibold text-sm text-primary">
                       {data.interviewA.candidateName}
                     </span>
-                    <p className="text-[11px] text-muted">{data.interviewA.roleTitle || 'Candidate A'}</p>
+                    <p className="text-[11px] text-muted">
+                      {data.interviewA.roleTitle || 'Candidate A'}
+                    </p>
                   </div>
                   {data.interviewA.scorecard && (
-                    <Badge variant={REC_BADGE[data.interviewA.scorecard.recommendation]?.variant || 'default'}>
-                      {REC_BADGE[data.interviewA.scorecard.recommendation]?.label || data.interviewA.scorecard.recommendation}
+                    <Badge
+                      variant={
+                        REC_BADGE[data.interviewA.scorecard.recommendation]?.variant || 'default'
+                      }
+                    >
+                      {REC_BADGE[data.interviewA.scorecard.recommendation]?.label ||
+                        data.interviewA.scorecard.recommendation}
                     </Badge>
                   )}
                 </div>
@@ -112,11 +122,18 @@ export function CandidateComparisonModal({
                     <span className="font-semibold text-sm text-primary">
                       {data.interviewB.candidateName}
                     </span>
-                    <p className="text-[11px] text-muted">{data.interviewB.roleTitle || 'Candidate B'}</p>
+                    <p className="text-[11px] text-muted">
+                      {data.interviewB.roleTitle || 'Candidate B'}
+                    </p>
                   </div>
                   {data.interviewB.scorecard && (
-                    <Badge variant={REC_BADGE[data.interviewB.scorecard.recommendation]?.variant || 'default'}>
-                      {REC_BADGE[data.interviewB.scorecard.recommendation]?.label || data.interviewB.scorecard.recommendation}
+                    <Badge
+                      variant={
+                        REC_BADGE[data.interviewB.scorecard.recommendation]?.variant || 'default'
+                      }
+                    >
+                      {REC_BADGE[data.interviewB.scorecard.recommendation]?.label ||
+                        data.interviewB.scorecard.recommendation}
                     </Badge>
                   )}
                 </div>
@@ -148,7 +165,10 @@ export function CandidateComparisonModal({
                   </div>
                 ) : (
                   data.criteria.map((crit) => (
-                    <div key={crit.criterionId} className="px-3 py-2 flex items-center justify-between">
+                    <div
+                      key={crit.criterionId}
+                      className="px-3 py-2 flex items-center justify-between"
+                    >
                       <span className="font-medium text-primary text-xs">{crit.name}</span>
                       <div className="flex items-center gap-14 pr-8 font-mono text-xs">
                         <span

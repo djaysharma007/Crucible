@@ -6,9 +6,7 @@ const nextConfig = {
   transpilePackages: ['@crucible/ui', '@crucible/shared', '@crucible/config'],
   async rewrites() {
     const apiUrl =
-      process.env.API_URL ||
-      process.env.NEXT_PUBLIC_API_URL ||
-      'http://localhost:4000/api/v1';
+      process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
     const baseApi = apiUrl.replace(/\/api\/v1\/?$/, '');
     return [
       {
@@ -39,13 +37,8 @@ const nextConfig = {
   },
   webpack: (config) => {
     try {
-      const monacoRoot = path.dirname(
-        path.dirname(path.dirname(require.resolve('monaco-editor'))),
-      );
-      const editorApiPath = path.join(
-        monacoRoot,
-        'esm/vs/editor/editor.api.js',
-      );
+      const monacoRoot = path.dirname(path.dirname(path.dirname(require.resolve('monaco-editor'))));
+      const editorApiPath = path.join(monacoRoot, 'esm/vs/editor/editor.api.js');
 
       config.resolve.alias = {
         ...config.resolve.alias,

@@ -27,7 +27,10 @@ export function AggregateStatsCards() {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-20 bg-surface border border-border rounded-panel animate-pulse" />
+          <div
+            key={i}
+            className="h-20 bg-surface border border-border rounded-panel animate-pulse"
+          />
         ))}
       </div>
     );
@@ -56,7 +59,9 @@ export function AggregateStatsCards() {
           <span className="text-[11px] font-mono text-muted uppercase tracking-wider block">
             Completed Sessions
           </span>
-          <span className="text-xl font-mono font-bold text-primary">{stats.completedInterviews}</span>
+          <span className="text-xl font-mono font-bold text-primary">
+            {stats.completedInterviews}
+          </span>
         </div>
         <div className="w-8 h-8 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
           <CheckCircle2 className="w-4 h-4" />
@@ -70,7 +75,8 @@ export function AggregateStatsCards() {
             Average Duration
           </span>
           <span className="text-xl font-mono font-bold text-primary">
-            {stats.averageDurationMinutes} <span className="text-xs font-normal text-muted">mins</span>
+            {stats.averageDurationMinutes}{' '}
+            <span className="text-xs font-normal text-muted">mins</span>
           </span>
         </div>
         <div className="w-8 h-8 rounded bg-[#587B7F]/10 border border-[#587B7F]/20 flex items-center justify-center text-[#587B7F]">

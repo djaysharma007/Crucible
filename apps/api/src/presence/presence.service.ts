@@ -9,10 +9,7 @@ import {
 import { AccessToken } from 'livekit-server-sdk';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RedisService } from '../redis/redis.service.js';
-import {
-  LiveKitTokenResponse,
-  RecordingStatusResponse,
-} from '@crucible/shared';
+import { LiveKitTokenResponse, RecordingStatusResponse } from '@crucible/shared';
 
 export interface ParticipantInfo {
   interviewId: string;
@@ -81,11 +78,7 @@ export class PresenceService {
     };
   }
 
-  async setRecordingConsent(
-    interviewId: string,
-    isInterviewer: boolean,
-    consented: boolean,
-  ) {
+  async setRecordingConsent(interviewId: string, isInterviewer: boolean, consented: boolean) {
     const roleKey = isInterviewer ? 'interviewer' : 'candidate';
     await this.redis.set(
       `recording:consent:${interviewId}:${roleKey}`,
@@ -98,12 +91,13 @@ export class PresenceService {
   }
 
   async getRecordingStatus(interviewId: string): Promise<RecordingStatusResponse> {
-    const [interviewerConsentedVal, candidateConsentedVal, activeRecordingData] =
-      await Promise.all([
+    const [interviewerConsentedVal, candidateConsentedVal, activeRecordingData] = await Promise.all(
+      [
         this.redis.get(`recording:consent:${interviewId}:interviewer`),
         this.redis.get(`recording:consent:${interviewId}:candidate`),
         this.redis.get(`recording:active:${interviewId}`),
-      ]);
+      ],
+    );
 
     const interviewerConsented = interviewerConsentedVal === 'true';
     const candidateConsented = candidateConsentedVal === 'true';
@@ -188,7 +182,9 @@ export class PresenceService {
       },
     });
 
-    this.logger.log(`Active cloud recording started for interview ${interviewId} (egress: ${egressId})`);
+    this.logger.log(
+      `Active cloud recording started for interview ${interviewId} (egress: ${egressId})`,
+    );
 
     return this.getRecordingStatus(interviewId);
   }
@@ -277,4 +273,3 @@ export class PresenceService {
     return { success: true };
   }
 }
-

@@ -41,16 +41,16 @@ This guide details how to deploy Crucible to production at **$0/month total cost
 
 ## External Services & Free Tier Limits
 
-| Service | Component | Free Tier Quota / Specifications | Cost |
-| :--- | :--- | :--- | :--- |
-| **Vercel** | Web Frontend | 100 GB bandwidth/mo, unlimited serverless functions | **$0.00** |
-| **Render** | API & Collab Web Services | 750 free instance hours/month, 512 MB RAM, sleeps after 15m idle | **$0.00** |
-| **Neon** | PostgreSQL Database | 0.5 GB storage, serverless compute, auto-suspend | **$0.00** |
-| **Upstash** | Redis (Presence & Rate Limit) | 10,000 commands/day, TLS enabled | **$0.00** |
-| **LiveKit Cloud** | WebRTC Video, Audio, Screen | 10,000 participant minutes/mo, 100 concurrent participants | **$0.00** |
-| **RapidAPI** | Judge0 CE Code Execution | 50 submissions/day, 10 requests/sec | **$0.00** |
-| **Supabase** | Object Storage (S3 API) | 1 GB storage, 2 GB egress/mo, 50 MB max file upload | **$0.00** |
-| **Brevo** | Transactional Email | 300 emails/day, single sender verification (no domain required) | **$0.00** |
+| Service           | Component                     | Free Tier Quota / Specifications                                 | Cost      |
+| :---------------- | :---------------------------- | :--------------------------------------------------------------- | :-------- |
+| **Vercel**        | Web Frontend                  | 100 GB bandwidth/mo, unlimited serverless functions              | **$0.00** |
+| **Render**        | API & Collab Web Services     | 750 free instance hours/month, 512 MB RAM, sleeps after 15m idle | **$0.00** |
+| **Neon**          | PostgreSQL Database           | 0.5 GB storage, serverless compute, auto-suspend                 | **$0.00** |
+| **Upstash**       | Redis (Presence & Rate Limit) | 10,000 commands/day, TLS enabled                                 | **$0.00** |
+| **LiveKit Cloud** | WebRTC Video, Audio, Screen   | 10,000 participant minutes/mo, 100 concurrent participants       | **$0.00** |
+| **RapidAPI**      | Judge0 CE Code Execution      | 50 submissions/day, 10 requests/sec                              | **$0.00** |
+| **Supabase**      | Object Storage (S3 API)       | 1 GB storage, 2 GB egress/mo, 50 MB max file upload              | **$0.00** |
+| **Brevo**         | Transactional Email           | 300 emails/day, single sender verification (no domain required)  | **$0.00** |
 
 ---
 
@@ -59,19 +59,22 @@ This guide details how to deploy Crucible to production at **$0/month total cost
 Follow these exact steps to obtain the free keys and connection strings:
 
 ### 1. Neon Serverless PostgreSQL
+
 1. Sign up at [neon.tech](https://neon.tech) (Free tier).
 2. Create a project named `crucible-production`.
 3. In the project dashboard, copy the **Connection string** (Direct and Pooled).
-   - `DATABASE_URL`: `postgresql://[user]:[password]@[endpoint].neon.tech/neondb?sslmode=require`
-   - `DIRECT_URL`: `postgresql://[user]:[password]@[endpoint]-pooler.neon.tech/neondb?sslmode=require`
+   - `DATABASE_URL`: `postgresql://[user]:[password]@[endpoint]-pooler.neon.tech/neondb?sslmode=require`
+   - `DIRECT_URL`: `postgresql://[user]:[password]@[endpoint].neon.tech/neondb?sslmode=require`
 
 ### 2. Upstash Redis
+
 1. Sign up at [upstash.com](https://upstash.com) (Free tier).
 2. Create a Redis database named `crucible-redis` in the same region as Render (e.g. US-East / Oregon).
 3. Copy the **Node.js ioredis connection string** (starts with `rediss://`).
    - `REDIS_URL`: `rediss://default:[password]@[endpoint].upstash.io:6379`
 
 ### 3. LiveKit Cloud
+
 1. Sign up at [livekit.io](https://livekit.io) for the free **Build Plan**.
 2. Create a project named `crucible-demo`.
 3. In Project Settings -> Keys, copy:
@@ -80,6 +83,7 @@ Follow these exact steps to obtain the free keys and connection strings:
    - `LIVEKIT_API_SECRET`: `secretxxxxxxxx`
 
 ### 4. RapidAPI (Judge0 CE)
+
 1. Sign up at [rapidapi.com](https://rapidapi.com).
 2. Navigate to [Judge0 CE on RapidAPI](https://rapidapi.com/judge0-official/api/judge0-ce).
 3. Subscribe to the **Basic (Free) Plan** ($0/month, 50 requests/day).
@@ -88,6 +92,7 @@ Follow these exact steps to obtain the free keys and connection strings:
    - `RAPIDAPI_JUDGE0_HOST`: `judge0-ce.p.rapidapi.com`
 
 ### 5. Supabase Storage (S3 API)
+
 1. Sign up at [supabase.com](https://supabase.com).
 2. Create a new free project `crucible-storage`.
 3. Navigate to **Storage** -> Create a new public/private bucket named `crucible-recordings`.
@@ -100,6 +105,7 @@ Follow these exact steps to obtain the free keys and connection strings:
    - `SUPABASE_S3_REGION`: `us-east-1`
 
 ### 6. Brevo (Transactional Email)
+
 1. Sign up at [brevo.com](https://brevo.com) (Free plan, 300 emails/day).
 2. In **Senders & IP**, add your personal email address as a **Verified Sender**. Confirm via the email sent to your inbox.
 3. In **SMTP & API** -> **API Keys**, create a new API Key.
@@ -172,7 +178,7 @@ To populate the database with a ready-to-present interview scenario, complete sc
 
 ## Free-Tier Behavior & Limitations
 
-- **Render Cold Starts**: Free web services spin down after 15 minutes of inactivity. When a user opens the application, the UI automatically displays a *"Waking up server..."* banner and polls `/health` until the API is warm (~30-50 seconds).
+- **Render Cold Starts**: Free web services spin down after 15 minutes of inactivity. When a user opens the application, the UI automatically displays a _"Waking up server..."_ banner and polls `/health` until the API is warm (~30-50 seconds).
 - **Collab WebSocket Persistence**: Active WebSocket traffic prevents the collab service from sleeping while an interview is in session.
 - **Judge0 Daily Quota**: RapidAPI free plan allows 50 submissions/day. Crucible displays the remaining executions in the editor panel. On 429, a clear banner notifies the candidate that executions are paused until midnight UTC.
 - **Supabase Storage Quota**: Continuous 10-second chunks are encoded at 500 kbps video + 64 kbps audio (~700 KB/chunk). Recordings stay safely within the 1 GB total storage limit.

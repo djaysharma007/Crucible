@@ -5,18 +5,15 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const port =
-  Number(process.env.PORT) || Number(process.env.COLLAB_PORT) || 4001;
+const port = Number(process.env.PORT) || Number(process.env.COLLAB_PORT) || 4001;
 const collabSecret =
   process.env.COLLAB_TOKEN_SECRET ||
   process.env.ROOM_TOKEN_SECRET ||
   'dev_collab_token_secret_32_chars';
 const sessionSecret =
-  process.env.SESSION_SECRET ||
-  'dev_session_secret_change_in_production_min_32_chars';
+  process.env.SESSION_SECRET || 'dev_session_secret_change_in_production_min_32_chars';
 const roomSecret =
-  process.env.ROOM_TOKEN_SECRET ||
-  'dev_room_token_secret_change_in_production_32_chars';
+  process.env.ROOM_TOKEN_SECRET || 'dev_room_token_secret_change_in_production_32_chars';
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
 const redis = new Redis(redisUrl, {

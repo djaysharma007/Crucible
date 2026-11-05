@@ -33,7 +33,10 @@ export class ExecutionController {
     @Inject(PrismaService) private readonly prisma: PrismaService,
   ) {}
 
-  private async resolveParticipant(req: Request, interviewQuestionId: string): Promise<{ isInterviewer: boolean }> {
+  private async resolveParticipant(
+    req: Request,
+    interviewQuestionId: string,
+  ): Promise<{ isInterviewer: boolean }> {
     // Fetch interview question to get interviewId
     const iq = await this.prisma.interviewQuestion.findUnique({
       where: { id: interviewQuestionId },
@@ -73,11 +76,7 @@ export class ExecutionController {
 
   @Post(':iqId/run')
   @RateLimit({ limit: 15, windowSeconds: 60, keyPrefix: 'code_run' })
-  async runCode(
-    @Param('iqId') iqId: string,
-    @Body() body: unknown,
-    @Req() req: Request,
-  ) {
+  async runCode(@Param('iqId') iqId: string, @Body() body: unknown, @Req() req: Request) {
     const { isInterviewer } = await this.resolveParticipant(req, iqId);
 
     const parseResult = RunCodeSchema.safeParse(body);
@@ -90,11 +89,7 @@ export class ExecutionController {
 
   @Post(':iqId/run-custom')
   @RateLimit({ limit: 15, windowSeconds: 60, keyPrefix: 'code_run_custom' })
-  async runCustom(
-    @Param('iqId') iqId: string,
-    @Body() body: unknown,
-    @Req() req: Request,
-  ) {
+  async runCustom(@Param('iqId') iqId: string, @Body() body: unknown, @Req() req: Request) {
     await this.resolveParticipant(req, iqId);
 
     const parseResult = RunCustomSchema.safeParse(body);
@@ -120,9 +115,7 @@ export class ExecutionController {
     await this.resolveParticipant(req, iqId);
 
     if (!body?.language || !SUPPORTED_LANGUAGES.includes(body.language as SupportedLanguage)) {
-      throw new BadRequestException(
-        `Language must be one of: ${SUPPORTED_LANGUAGES.join(', ')}`,
-      );
+      throw new BadRequestException(`Language must be one of: ${SUPPORTED_LANGUAGES.join(', ')}`);
     }
 
     return this.prisma.interviewQuestion.update({
@@ -131,4 +124,3 @@ export class ExecutionController {
     });
   }
 }
-

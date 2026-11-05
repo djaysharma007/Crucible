@@ -13,4 +13,3 @@ import { RoomsModule } from '../rooms/rooms.module.js';
   exports: [PresenceService],
 })
 export class PresenceModule {}
-

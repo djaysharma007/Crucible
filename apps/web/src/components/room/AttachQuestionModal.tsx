@@ -67,9 +67,10 @@ export function AttachQuestionModal({
   }, [isOpen, selectedQuestionId]);
 
   const filteredQuestions = React.useMemo(() => {
-    return questions.filter((q) =>
-      q.title.toLowerCase().includes(search.toLowerCase()) ||
-      q.tags.some((t) => t.toLowerCase().includes(search.toLowerCase())),
+    return questions.filter(
+      (q) =>
+        q.title.toLowerCase().includes(search.toLowerCase()) ||
+        q.tags.some((t) => t.toLowerCase().includes(search.toLowerCase())),
     );
   }, [questions, search]);
 
@@ -150,8 +151,8 @@ export function AttachQuestionModal({
                             q.difficulty === 'easy'
                               ? 'success'
                               : q.difficulty === 'medium'
-                              ? 'warning'
-                              : 'danger'
+                                ? 'warning'
+                                : 'danger'
                           }
                         >
                           {q.difficulty}
@@ -176,7 +177,10 @@ export function AttachQuestionModal({
                   </div>
 
                   <div className="pt-2 border-t border-[#393E41] mt-2">
-                    <label htmlFor="starter-lang" className="text-[11px] text-[#D3D0CB]/70 font-mono block mb-1">
+                    <label
+                      htmlFor="starter-lang"
+                      className="text-[11px] text-[#D3D0CB]/70 font-mono block mb-1"
+                    >
                       Initial Starter Language:
                     </label>
                     <select
@@ -216,7 +220,11 @@ export function AttachQuestionModal({
             disabled={!selectedQuestionId || isSubmitting}
             className="px-4 py-1.5 text-xs font-medium bg-[#E2C044] hover:bg-[#E2C044]/90 text-[#1E2019] rounded disabled:opacity-50 flex items-center gap-1.5"
           >
-            {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+            {isSubmitting ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Plus className="w-3.5 h-3.5" />
+            )}
             Attach Question
           </button>
         </DialogFooter>

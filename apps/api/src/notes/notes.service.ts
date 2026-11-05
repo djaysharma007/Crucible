@@ -36,7 +36,9 @@ export class NotesService {
 
     let offsetMs = input.offsetMs;
     if (offsetMs === undefined || offsetMs === null) {
-      const baseTime = interview.startedAt ? interview.startedAt.getTime() : interview.createdAt.getTime();
+      const baseTime = interview.startedAt
+        ? interview.startedAt.getTime()
+        : interview.createdAt.getTime();
       offsetMs = Math.max(0, Date.now() - baseTime);
     }
 
@@ -49,12 +51,7 @@ export class NotesService {
     });
   }
 
-  async updateNote(
-    user: UserSummary,
-    interviewId: string,
-    noteId: string,
-    input: UpdateNoteInput,
-  ) {
+  async updateNote(user: UserSummary, interviewId: string, noteId: string, input: UpdateNoteInput) {
     await this.verifyInterviewOwner(user, interviewId);
 
     const note = await this.prisma.note.findUnique({

@@ -29,4 +29,3 @@ export interface RecordingStatusResponse {
   candidateConsented: boolean;
   egressId: string | null;
 }
-

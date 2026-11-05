@@ -23,7 +23,9 @@ const RECOMMENDATION_LABELS: Record<Recommendation, { label: string; color: stri
 
 export function RubricScorecardPanel({ interviewId }: RubricScorecardPanelProps) {
   const [rubric, setRubric] = React.useState<RubricTemplateItem | null>(null);
-  const [ratings, setRatings] = React.useState<Record<string, { rating: number; justification: string }>>({});
+  const [ratings, setRatings] = React.useState<
+    Record<string, { rating: number; justification: string }>
+  >({});
   const [recommendation, setRecommendation] = React.useState<Recommendation>('hire');
   const [summaryText, setSummaryText] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(true);
@@ -160,9 +162,7 @@ export function RubricScorecardPanel({ interviewId }: RubricScorecardPanelProps)
             >
               <div className="flex items-start justify-between gap-1">
                 <div>
-                  <span className="font-semibold text-[11px] text-[#D3D0CB]">
-                    {criterion.name}
-                  </span>
+                  <span className="font-semibold text-[11px] text-[#D3D0CB]">{criterion.name}</span>
                   <p className="text-[10px] text-[#D3D0CB]/60 mt-0.5 leading-snug">
                     {criterion.description}
                   </p>

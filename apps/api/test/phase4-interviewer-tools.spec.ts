@@ -242,7 +242,8 @@ describe('Phase 4 Interviewer Tools E2E Test Suite', () => {
         .set('Cookie', interviewerCookie)
         .send({
           recommendation: 'strong_hire',
-          summaryText: 'Outstanding technical performance, clean modular code, and proactive communication.',
+          summaryText:
+            'Outstanding technical performance, clean modular code, and proactive communication.',
           ratings,
         })
         .expect(201);

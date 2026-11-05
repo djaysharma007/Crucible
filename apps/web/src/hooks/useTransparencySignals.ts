@@ -24,10 +24,7 @@ export function useTransparencySignals({
 
       const now = Date.now();
       // Debounce duplicate events within 500ms
-      if (
-        lastSignalRef.current.type === type &&
-        now - lastSignalRef.current.timestamp < 500
-      ) {
+      if (lastSignalRef.current.type === type && now - lastSignalRef.current.timestamp < 500) {
         return;
       }
       lastSignalRef.current = { type, timestamp: now };
@@ -95,4 +92,3 @@ export function useTransparencySignals({
 
   return { sendSignal };
 }
-

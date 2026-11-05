@@ -45,11 +45,7 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
               ? { deviceId: { exact: videoDeviceId } }
               : true
             : false,
-          audio: isMicOn
-            ? audioDeviceId
-              ? { deviceId: { exact: audioDeviceId } }
-              : true
-            : false,
+          audio: isMicOn ? (audioDeviceId ? { deviceId: { exact: audioDeviceId } } : true) : false,
         };
 
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -64,8 +60,7 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
           try {
             const AudioContextClass =
               window.AudioContext ||
-              (window as unknown as { webkitAudioContext: typeof AudioContext })
-                .webkitAudioContext;
+              (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
             const audioCtx = new AudioContextClass();
             const analyser = audioCtx.createAnalyser();
             const source = audioCtx.createMediaStreamSource(stream);
@@ -172,7 +167,11 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
                 }`}
                 title={isCameraOn ? 'Disable camera' : 'Enable camera'}
               >
-                {isCameraOn ? <Video className="w-3.5 h-3.5" /> : <VideoOff className="w-3.5 h-3.5" />}
+                {isCameraOn ? (
+                  <Video className="w-3.5 h-3.5" />
+                ) : (
+                  <VideoOff className="w-3.5 h-3.5" />
+                )}
               </button>
 
               <button
@@ -209,7 +208,10 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
           {/* Device Selectors */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
             <div>
-              <label htmlFor="device-camera-select" className="text-[10px] text-[#D3D0CB]/60 block mb-0.5">
+              <label
+                htmlFor="device-camera-select"
+                className="text-[10px] text-[#D3D0CB]/60 block mb-0.5"
+              >
                 Camera:
               </label>
               <select
@@ -231,7 +233,10 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
             </div>
 
             <div>
-              <label htmlFor="device-mic-select" className="text-[10px] text-[#D3D0CB]/60 block mb-0.5">
+              <label
+                htmlFor="device-mic-select"
+                className="text-[10px] text-[#D3D0CB]/60 block mb-0.5"
+              >
                 Microphone:
               </label>
               <select
@@ -259,10 +264,11 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
       <div className="p-2.5 rounded bg-[#393E41]/30 border border-[#393E41] text-[11px] text-[#D3D0CB]/80 space-y-1">
         <span className="font-semibold text-[#E2C044] block">Transparency Disclosure</span>
         <p className="leading-snug text-[#D3D0CB]/70 font-sans">
-          To support technical integrity, tab focus, window visibility, and large editor paste events are logged as neutral facts on the timeline. All interview data is retained for 90 days in accordance with data retention standards.
+          To support technical integrity, tab focus, window visibility, and large editor paste
+          events are logged as neutral facts on the timeline. All interview data is retained for 90
+          days in accordance with data retention standards.
         </p>
       </div>
     </div>
   );
 }
-

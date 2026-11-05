@@ -15,7 +15,12 @@ import { RoomsService } from './rooms.service.js';
 import { AuthService } from '../auth/auth.service.js';
 import { AuthGuard } from '../auth/guards/auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
-import { JoinRoomSchema, AdmitCandidateSchema, CreateSignalSchema, UserSummary } from '@crucible/shared';
+import {
+  JoinRoomSchema,
+  AdmitCandidateSchema,
+  CreateSignalSchema,
+  UserSummary,
+} from '@crucible/shared';
 import { RateLimit } from '../common/guards/rate-limit.guard.js';
 
 @Controller('rooms')
@@ -151,11 +156,7 @@ export class RoomsController {
 
   @Post(':id/signals')
   @RateLimit({ limit: 60, windowSeconds: 60, keyPrefix: 'room_signals' })
-  async recordSignal(
-    @Param('id') id: string,
-    @Body() body: unknown,
-    @Req() req: Request,
-  ) {
+  async recordSignal(@Param('id') id: string, @Body() body: unknown, @Req() req: Request) {
     const parseResult = CreateSignalSchema.safeParse(body);
     if (!parseResult.success) {
       throw new BadRequestException(parseResult.error.errors[0]?.message);
@@ -250,6 +251,8 @@ export class RoomsController {
       }
     }
 
-    throw new BadRequestException('Valid interviewer or candidate session required to obtain collaborative token');
+    throw new BadRequestException(
+      'Valid interviewer or candidate session required to obtain collaborative token',
+    );
   }
 }

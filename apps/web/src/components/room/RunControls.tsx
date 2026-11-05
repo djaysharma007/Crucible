@@ -144,12 +144,12 @@ export function RunControls({
                 {lang === 'cpp'
                   ? 'C++ (GCC)'
                   : lang === 'javascript'
-                  ? 'JavaScript (Node.js)'
-                  : lang === 'typescript'
-                  ? 'TypeScript'
-                  : lang === 'python'
-                  ? 'Python 3'
-                  : 'Java'}
+                    ? 'JavaScript (Node.js)'
+                    : lang === 'typescript'
+                      ? 'TypeScript'
+                      : lang === 'python'
+                        ? 'Python 3'
+                        : 'Java'}
               </option>
             ))}
           </select>
@@ -199,4 +199,3 @@ export function RunControls({
     </div>
   );
 }
-

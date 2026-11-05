@@ -156,7 +156,10 @@ export function QuestionPanel({
           </div>
 
           {/* Problem Statement */}
-          <TabsContent value="problem" className="flex-1 overflow-y-auto p-4 space-y-4 focus:outline-none">
+          <TabsContent
+            value="problem"
+            className="flex-1 overflow-y-auto p-4 space-y-4 focus:outline-none"
+          >
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-[#D3D0CB]">{question.title}</h2>
               <Badge variant={difficultyVariant(question.difficulty)}>
@@ -183,7 +186,10 @@ export function QuestionPanel({
           </TabsContent>
 
           {/* Test Cases List */}
-          <TabsContent value="testcases" className="flex-1 overflow-y-auto p-4 space-y-3 focus:outline-none">
+          <TabsContent
+            value="testcases"
+            className="flex-1 overflow-y-auto p-4 space-y-3 focus:outline-none"
+          >
             <div className="text-xs text-[#D3D0CB]/70 mb-2">
               The solution will be evaluated against visible and hidden test cases:
             </div>
@@ -230,14 +236,18 @@ export function QuestionPanel({
                   <span>+{question.hiddenCasesCount} Hidden Evaluation Cases</span>
                 </div>
                 <p className="mt-1 text-[11px] text-[#D3D0CB]/70 font-sans">
-                  Additional private evaluation test cases will be executed when you click &quot;Run Tests&quot;. You will receive an aggregate pass/fail count.
+                  Additional private evaluation test cases will be executed when you click &quot;Run
+                  Tests&quot;. You will receive an aggregate pass/fail count.
                 </p>
               </div>
             )}
           </TabsContent>
 
           {/* Test Execution Results */}
-          <TabsContent value="results" className="flex-1 overflow-y-auto p-4 space-y-3 focus:outline-none">
+          <TabsContent
+            value="results"
+            className="flex-1 overflow-y-auto p-4 space-y-3 focus:outline-none"
+          >
             {!latestRun ? (
               <div className="flex flex-col items-center justify-center h-48 text-center text-xs text-[#D3D0CB]/50">
                 <Play className="w-6 h-6 mb-2 text-[#393E41]" />

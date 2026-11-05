@@ -15,6 +15,41 @@ jobs:
     name: Lint, Typecheck, Test, and Build
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: crucible
+          POSTGRES_PASSWORD: crucible_dev_pass
+          POSTGRES_DB: crucible_dev
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://crucible:crucible_dev_pass@localhost:5433/crucible_dev?schema=public
+      DIRECT_URL: postgresql://crucible:crucible_dev_pass@localhost:5433/crucible_dev?schema=public
+      REDIS_URL: redis://localhost:6379
+      SESSION_SECRET: dev_session_secret_change_in_production_min_32_chars
+      ROOM_TOKEN_SECRET: dev_room_token_secret_change_in_production_32_chars
+      COLLAB_TOKEN_SECRET: dev_collab_token_secret_32_chars
+      EXECUTION_PROVIDER: self_hosted
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,8 +68,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate Prisma Client
-        run: pnpm --filter @crucible/api prisma:generate
+      - name: Generate Prisma Client & Run Migrations
+        run: |
+          pnpm --filter @crucible/api prisma:generate
+          pnpm --filter @crucible/api prisma:migrate:deploy
 
       - name: Run linter
         run: pnpm lint
@@ -47,4 +84,3 @@ jobs:
 
       - name: Build packages and applications
         run: pnpm build
-

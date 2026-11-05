@@ -4,8 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 export class BrevoEmailService {
   private readonly logger = new Logger(BrevoEmailService.name);
   private readonly apiKey = process.env.BREVO_API_KEY || '';
-  private readonly senderEmail =
-    process.env.BREVO_SENDER_EMAIL || 'noreply@crucible.dev';
+  private readonly senderEmail = process.env.BREVO_SENDER_EMAIL || 'noreply@crucible.dev';
   private readonly senderName =
     process.env.BREVO_SENDER_NAME || 'Crucible Technical Interview Platform';
   private readonly frontendUrl =

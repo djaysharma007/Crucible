@@ -6,13 +6,15 @@ import request from 'supertest';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module.js';
 import { AllExceptionsFilter } from '../src/common/filters/http-exception.filter.js';
-import { EXECUTION_PROVIDER, ExecutionProvider } from '../src/execution/execution-provider.interface.js';
+import {
+  EXECUTION_PROVIDER,
+  ExecutionProvider,
+} from '../src/execution/execution-provider.interface.js';
 
 const mockExecutionProvider: ExecutionProvider = {
   async submit(input) {
     const isError =
-      input.sourceCode.includes('throw new Error') ||
-      input.sourceCode.includes('raise Exception');
+      input.sourceCode.includes('throw new Error') || input.sourceCode.includes('raise Exception');
     if (isError) {
       return {
         stdout: '',
@@ -57,11 +59,12 @@ describe('Phase 2 Core Interview E2E Test Suite', () => {
   const testPassword = 'StrongPassword123!';
 
   beforeAll(async () => {
-
-
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).overrideProvider(EXECUTION_PROVIDER).useValue(mockExecutionProvider).compile();
+    })
+      .overrideProvider(EXECUTION_PROVIDER)
+      .useValue(mockExecutionProvider)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api/v1');
@@ -112,7 +115,8 @@ describe('Phase 2 Core Interview E2E Test Suite', () => {
         languages: [
           {
             language: 'typescript',
-            starterCode: 'function reverse(s: string): string { return s.split("").reverse().join(""); }',
+            starterCode:
+              'function reverse(s: string): string { return s.split("").reverse().join(""); }',
           },
           {
             language: 'python',
@@ -340,4 +344,3 @@ describe('Phase 2 Core Interview E2E Test Suite', () => {
     expect(res.body.docType).toBe(`whiteboard:${interviewQuestionId}`);
   });
 });
-

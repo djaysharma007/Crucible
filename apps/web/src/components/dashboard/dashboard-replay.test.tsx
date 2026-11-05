@@ -164,7 +164,13 @@ describe('Phase 5 Dashboard & Replay Frontend Components', () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           ratings: [
-            { id: 'r-1', scorecardId: 'sc-1', criterionId: 'crit-1', rating: 4, justification: 'Flawless optimal algorithm' },
+            {
+              id: 'r-1',
+              scorecardId: 'sc-1',
+              criterionId: 'crit-1',
+              rating: 4,
+              justification: 'Flawless optimal algorithm',
+            },
           ],
         },
         whiteboardSnapshots: [],
@@ -191,7 +197,13 @@ describe('Phase 5 Dashboard & Replay Frontend Components', () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           ratings: [
-            { id: 'r-2', scorecardId: 'sc-2', criterionId: 'crit-1', rating: 2, justification: 'Brute force without optimization' },
+            {
+              id: 'r-2',
+              scorecardId: 'sc-2',
+              criterionId: 'crit-1',
+              rating: 2,
+              justification: 'Brute force without optimization',
+            },
           ],
         },
         whiteboardSnapshots: [],
@@ -214,12 +226,7 @@ describe('Phase 5 Dashboard & Replay Frontend Components', () => {
       (apiClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockComparison);
 
       render(
-        <CandidateComparisonModal
-          id1="int-1"
-          id2="int-2"
-          isOpen={true}
-          onOpenChange={vi.fn()}
-        />,
+        <CandidateComparisonModal id1="int-1" id2="int-2" isOpen={true} onOpenChange={vi.fn()} />,
       );
 
       await waitFor(() => {
@@ -228,9 +235,7 @@ describe('Phase 5 Dashboard & Replay Frontend Components', () => {
         expect(screen.getByText('Problem Solving')).toBeDefined();
         expect(screen.getByText('Strong Hire')).toBeDefined();
         expect(screen.getByText('No Hire')).toBeDefined();
-        expect(
-          screen.getByText(/Exceptional system architecture understanding/i),
-        ).toBeDefined();
+        expect(screen.getByText(/Exceptional system architecture understanding/i)).toBeDefined();
       });
     });
   });

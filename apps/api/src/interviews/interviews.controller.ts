@@ -58,7 +58,9 @@ export class InterviewsController {
     @Query('id2') id2: string,
   ) {
     if (!id1 || !id2) {
-      throw new BadRequestException('Both id1 and id2 query parameters are required for candidate comparison');
+      throw new BadRequestException(
+        'Both id1 and id2 query parameters are required for candidate comparison',
+      );
     }
     return this.interviewsService.compare(user, id1, id2);
   }
@@ -79,9 +81,7 @@ export class InterviewsController {
   }
 
   @Post('cleanup')
-  async cleanupExpired(
-    @Query('retentionDays') retentionDays?: string,
-  ) {
+  async cleanupExpired(@Query('retentionDays') retentionDays?: string) {
     const days = retentionDays ? parseInt(retentionDays, 10) : 90;
     return this.interviewsService.cleanupExpired(isNaN(days) ? 90 : days);
   }

@@ -41,7 +41,9 @@ async function main() {
     });
     process.stdout.write(`Created demo interviewer account: ${demoEmail} (${interviewer.id})\n`);
   } else {
-    process.stdout.write(`Demo interviewer account already exists: ${demoEmail} (${interviewer.id})\n`);
+    process.stdout.write(
+      `Demo interviewer account already exists: ${demoEmail} (${interviewer.id})\n`,
+    );
   }
 
   // 2. Seed standard question bank
@@ -202,7 +204,8 @@ async function main() {
       data: [
         {
           interviewId: interview.id,
-          bodyMd: 'Candidate immediately clarified edge cases (duplicate values, negative numbers).',
+          bodyMd:
+            'Candidate immediately clarified edge cases (duplicate values, negative numbers).',
           offsetMs: 3 * 60 * 1000,
         },
         {
@@ -303,7 +306,9 @@ async function main() {
       ],
     });
 
-    process.stdout.write(`Created completed demo interview: ${demoInterviewTitle} (${interview.id})\n`);
+    process.stdout.write(
+      `Created completed demo interview: ${demoInterviewTitle} (${interview.id})\n`,
+    );
   }
 
   process.stdout.write('--- Seeding Completed Successfully ---\n');

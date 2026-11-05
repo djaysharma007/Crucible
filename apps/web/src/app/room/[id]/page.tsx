@@ -103,8 +103,11 @@ function RoomContent() {
 
   // Presence & Media State
   const isInterviewer = Boolean(user && !tokenParam);
-  const [recordingStatus, setRecordingStatus] = React.useState<RecordingStatusResponse | null>(null);
-  const [screenSharePrompt, setScreenSharePrompt] = React.useState<ScreenShareRequestPayload | null>(null);
+  const [recordingStatus, setRecordingStatus] = React.useState<RecordingStatusResponse | null>(
+    null,
+  );
+  const [screenSharePrompt, setScreenSharePrompt] =
+    React.useState<ScreenShareRequestPayload | null>(null);
   const [isRequestingScreen, setIsRequestingScreen] = React.useState(false);
   const [isScreenTheaterOpen, setIsScreenTheaterOpen] = React.useState(true);
   const [isEndModalOpen, setIsEndModalOpen] = React.useState(false);
@@ -162,7 +165,9 @@ function RoomContent() {
   const fetchRecordingStatus = React.useCallback(async () => {
     if (!shouldConnectLiveKit) return;
     try {
-      const rec = await apiClient<RecordingStatusResponse>(`/rooms/${interviewId}/recording/status`);
+      const rec = await apiClient<RecordingStatusResponse>(
+        `/rooms/${interviewId}/recording/status`,
+      );
       setRecordingStatus(rec);
     } catch {
       // Ignored
@@ -286,13 +291,10 @@ function RoomContent() {
     if (!activeIQ) return;
     try {
       setIsRunningTests(true);
-      const res = await apiClient.post<RunCodeResponse>(
-        `/interview-questions/${activeIQ.id}/run`,
-        {
-          language: selectedLanguage,
-          sourceCode: currentCode,
-        },
-      );
+      const res = await apiClient.post<RunCodeResponse>(`/interview-questions/${activeIQ.id}/run`, {
+        language: selectedLanguage,
+        sourceCode: currentCode,
+      });
       setLatestRun(res);
     } catch (err) {
       const msg = (err as Error).message || '';
@@ -411,7 +413,8 @@ function RoomContent() {
             <h1 className="text-lg font-semibold text-primary">Join Interview Room</h1>
             <p className="text-xs text-muted mt-0.5">
               You have been invited to a live technical assessment for{' '}
-              <strong className="text-primary">{statusData.roleTitle || 'Engineering Role'}</strong>.
+              <strong className="text-primary">{statusData.roleTitle || 'Engineering Role'}</strong>
+              .
             </p>
           </div>
 
@@ -440,8 +443,8 @@ function RoomContent() {
               </div>
               <p className="text-muted leading-relaxed text-[11px]">
                 To maintain assessment integrity, this interview room records collaborative editor
-                changes, code test execution results, and advisory tab visibility signals. Private notes
-                and internal rubric evaluations remain interviewer-only.
+                changes, code test execution results, and advisory tab visibility signals. Private
+                notes and internal rubric evaluations remain interviewer-only.
               </p>
               <label className="flex items-start gap-2 pt-1 cursor-pointer select-none">
                 <input
@@ -506,10 +509,12 @@ function RoomContent() {
           <div>
             <h2 className="text-base font-semibold text-primary">Interview Concluded</h2>
             <p className="text-xs text-muted mt-2 leading-relaxed font-sans">
-              Thank you for participating in today's technical interview. The session has ended, and your code and whiteboard work have been saved.
+              Thank you for participating in today's technical interview. The session has ended, and
+              your code and whiteboard work have been saved.
             </p>
             <p className="text-[11px] text-muted/70 mt-1 font-sans">
-              Our hiring team will follow up with feedback and next steps. You may now safely close this tab.
+              Our hiring team will follow up with feedback and next steps. You may now safely close
+              this tab.
             </p>
           </div>
           <div className="pt-2">
@@ -592,8 +597,8 @@ function RoomContent() {
               statusData.status === 'live'
                 ? 'accent'
                 : statusData.status === 'completed'
-                ? 'success'
-                : 'default'
+                  ? 'success'
+                  : 'default'
             }
           >
             {statusData.status.toUpperCase()}
@@ -606,8 +611,8 @@ function RoomContent() {
                 connectionState === 'connected'
                   ? 'bg-emerald-400'
                   : connectionState === 'connecting'
-                  ? 'bg-amber-400 animate-pulse'
-                  : 'bg-[#587B7F]'
+                    ? 'bg-amber-400 animate-pulse'
+                    : 'bg-[#587B7F]'
               }`}
             />
             <span className="capitalize">{connectionState}</span>
@@ -774,7 +779,9 @@ function RoomContent() {
                 key={`wb:${activeIQ?.id || 'root'}`}
                 interviewId={interviewId}
                 activeQuestionId={activeIQ?.id}
-                readOnly={!isInterviewer && (statusData.isLocked || statusData.status === 'completed')}
+                readOnly={
+                  !isInterviewer && (statusData.isLocked || statusData.status === 'completed')
+                }
               />
             )}
           </div>
@@ -807,7 +814,11 @@ function RoomContent() {
             <div className="flex flex-col gap-2">
               {/* Local Participant Tile */}
               <VideoTile
-                name={isInterviewer ? user?.displayName || 'Interviewer' : candidateNameInput || 'Candidate'}
+                name={
+                  isInterviewer
+                    ? user?.displayName || 'Interviewer'
+                    : candidateNameInput || 'Candidate'
+                }
                 isInterviewer={isInterviewer}
                 videoTrack={localParticipant?.videoTrack || null}
                 audioTrack={localParticipant?.audioTrack || null}
@@ -823,8 +834,8 @@ function RoomContent() {
                   remoteParticipant
                     ? remoteParticipant.name
                     : isInterviewer
-                    ? statusData.candidateName || 'Candidate'
-                    : 'Interviewer'
+                      ? statusData.candidateName || 'Candidate'
+                      : 'Interviewer'
                 }
                 isInterviewer={!isInterviewer}
                 videoTrack={remoteParticipant?.videoTrack || null}
@@ -852,10 +863,7 @@ function RoomContent() {
 
           {/* Interviewer Tools Panel (Phase 4) */}
           {isInterviewer ? (
-            <InterviewerToolsTabs
-              interviewId={interviewId}
-              elapsedSeconds={elapsedSeconds}
-            />
+            <InterviewerToolsTabs interviewId={interviewId} elapsedSeconds={elapsedSeconds} />
           ) : (
             <div className="flex-1 p-4 flex flex-col items-center justify-center text-center text-[11px] text-[#D3D0CB]/50 space-y-1">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />

@@ -99,7 +99,9 @@ describe('Phase 1 Foundation E2E Lifecycle', () => {
 
     candidateId = res.body.candidateId;
     const cookies = res.headers['set-cookie'];
-    candidateSessionCookie = cookies.find((c: string) => c.startsWith('crucible_candidate_session='));
+    candidateSessionCookie = cookies.find((c: string) =>
+      c.startsWith('crucible_candidate_session='),
+    );
     expect(candidateSessionCookie).toBeDefined();
   });
 

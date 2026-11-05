@@ -1,16 +1,7 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, Inject } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
-import {
-  ExecutionProvider,
-  EXECUTION_PROVIDER,
-} from './execution-provider.interface.js';
+import { ExecutionProvider, EXECUTION_PROVIDER } from './execution-provider.interface.js';
 import {
   RunCodeInput,
   RunCustomInput,
@@ -160,10 +151,7 @@ export class ExecutionService {
     return response;
   }
 
-  async runCustom(
-    interviewQuestionId: string,
-    input: RunCustomInput,
-  ): Promise<RunCustomResponse> {
+  async runCustom(interviewQuestionId: string, input: RunCustomInput): Promise<RunCustomResponse> {
     const iq = await this.prisma.interviewQuestion.findUnique({
       where: { id: interviewQuestionId },
       include: { interview: true },

@@ -39,11 +39,7 @@ interface WhiteboardProps {
   readOnly?: boolean;
 }
 
-export function Whiteboard({
-  interviewId,
-  activeQuestionId,
-  readOnly = false,
-}: WhiteboardProps) {
+export function Whiteboard({ interviewId, activeQuestionId, readOnly = false }: WhiteboardProps) {
   const [isSynced, setIsSynced] = React.useState(false);
   const [isSavingSnapshot, setIsSavingSnapshot] = React.useState(false);
   const [snapshotSaved, setSnapshotSaved] = React.useState(false);

@@ -47,3 +47,4 @@ WORKDIR /app/apps/api
 
 # Run prisma migration deploy before starting server on Render
 CMD ["sh", "-c", "pnpm prisma:migrate:deploy && node dist/main.js"]
+

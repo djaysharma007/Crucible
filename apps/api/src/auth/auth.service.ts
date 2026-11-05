@@ -30,7 +30,9 @@ export interface SessionJwtPayload {
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private readonly sessionSecret =
-    process.env.SESSION_SECRET || 'dev_session_secret_change_in_production_min_32_chars';
+    process.env.SESSION_SECRET ||
+    process.env.JWT_SECRET ||
+    'dev_session_secret_change_in_production_min_32_chars';
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,

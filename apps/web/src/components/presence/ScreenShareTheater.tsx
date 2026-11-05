@@ -68,7 +68,11 @@ export function ScreenShareTheater({
             className="p-1 hover:bg-[#393E41] rounded text-[#D3D0CB]/70 hover:text-[#D3D0CB] transition-colors"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
-            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            {isFullscreen ? (
+              <Minimize2 className="w-3.5 h-3.5" />
+            ) : (
+              <Maximize2 className="w-3.5 h-3.5" />
+            )}
           </button>
 
           {onClose && (
@@ -86,14 +90,8 @@ export function ScreenShareTheater({
 
       {/* Screen Share Video Track */}
       <div className="flex-1 bg-black flex items-center justify-center relative overflow-hidden">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          className="w-full h-full object-contain"
-        />
+        <video ref={videoRef} autoPlay playsInline className="w-full h-full object-contain" />
       </div>
     </div>
   );
 }
-

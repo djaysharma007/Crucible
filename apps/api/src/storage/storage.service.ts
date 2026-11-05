@@ -1,8 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  S3Client,
-  PutObjectCommand,
-} from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class StorageService {
@@ -13,31 +10,34 @@ export class StorageService {
 
   constructor() {
     this.endpoint =
+      process.env.SUPABASE_S3_ENDPOINT ||
       process.env.SUPABASE_STORAGE_ENDPOINT ||
       process.env.S3_ENDPOINT ||
       '';
     const region =
+      process.env.SUPABASE_S3_REGION ||
       process.env.SUPABASE_STORAGE_REGION ||
       process.env.S3_REGION ||
       'us-east-1';
     const accessKeyId =
+      process.env.SUPABASE_S3_ACCESS_KEY ||
       process.env.SUPABASE_STORAGE_ACCESS_KEY ||
       process.env.S3_ACCESS_KEY ||
       '';
     const secretAccessKey =
+      process.env.SUPABASE_S3_SECRET_KEY ||
       process.env.SUPABASE_STORAGE_SECRET_KEY ||
       process.env.S3_SECRET_KEY ||
       '';
     this.bucket =
+      process.env.SUPABASE_S3_BUCKET ||
       process.env.SUPABASE_STORAGE_BUCKET ||
       process.env.S3_BUCKET_NAME ||
       'crucible-recordings';
 
     if (this.endpoint && accessKeyId && secretAccessKey) {
       this.s3Client = new S3Client({
-        endpoint: this.endpoint.startsWith('http')
-          ? this.endpoint
-          : `https://${this.endpoint}`,
+        endpoint: this.endpoint.startsWith('http') ? this.endpoint : `https://${this.endpoint}`,
         region,
         credentials: {
           accessKeyId,
@@ -45,9 +45,13 @@ export class StorageService {
         },
         forcePathStyle: true,
       });
-      this.logger.log(`Initialized S3 storage client for bucket '${this.bucket}' at ${this.endpoint}`);
+      this.logger.log(
+        `Initialized S3 storage client for bucket '${this.bucket}' at ${this.endpoint}`,
+      );
     } else {
-      this.logger.warn('Storage credentials not fully configured; S3 uploads will operate in simulated mode.');
+      this.logger.warn(
+        'Storage credentials not fully configured; S3 uploads will operate in simulated mode.',
+      );
     }
   }
 

@@ -142,11 +142,7 @@ export class RoomsService {
     };
   }
 
-  async saveWhiteboardSnapshot(
-    interviewId: string,
-    docType: string,
-    snapshotData: string,
-  ) {
+  async saveWhiteboardSnapshot(interviewId: string, docType: string, snapshotData: string) {
     const interview = await this.prisma.interview.findUnique({
       where: { id: interviewId },
     });
@@ -296,7 +292,9 @@ export class RoomsService {
 
     let offsetMs = clientOffsetMs;
     if (offsetMs === undefined) {
-      const baseTime = interview.startedAt ? interview.startedAt.getTime() : interview.createdAt.getTime();
+      const baseTime = interview.startedAt
+        ? interview.startedAt.getTime()
+        : interview.createdAt.getTime();
       offsetMs = Math.max(0, Date.now() - baseTime);
     }
 
@@ -309,7 +307,9 @@ export class RoomsService {
       },
     });
 
-    this.logger.log(`Recorded transparency signal '${type}' for interview ${interviewId} at offset ${offsetMs}ms`);
+    this.logger.log(
+      `Recorded transparency signal '${type}' for interview ${interviewId} at offset ${offsetMs}ms`,
+    );
     return signal;
   }
 

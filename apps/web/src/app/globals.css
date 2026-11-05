@@ -20,7 +20,13 @@ body {
     color: #111111 !important;
   }
 
-  header, nav, aside, button, .print\\:hidden, [role="dialog"], [aria-label="Server status alert"] {
+  header,
+  nav,
+  aside,
+  button,
+  .print\\:hidden,
+  [role='dialog'],
+  [aria-label='Server status alert'] {
     display: none !important;
   }
 
@@ -28,13 +34,16 @@ body {
     display: block !important;
   }
 
-  .bg-base, .bg-surface, .bg-\\[\\#1E2019\\] {
+  .bg-base,
+  .bg-surface,
+  .bg-\\[\\#1E2019\\] {
     background-color: #ffffff !important;
     color: #111111 !important;
     border-color: #dddddd !important;
   }
 
-  pre, code {
+  pre,
+  code {
     background-color: #f5f5f5 !important;
     color: #111111 !important;
     border: 1px solid #e0e0e0 !important;

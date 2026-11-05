@@ -91,7 +91,8 @@ export function CodeEditor({
       url: collabUrl,
       name: documentName,
       document: ydoc,
-      token: authToken || (interviewId ? async () => fetchCollabToken(interviewId) : 'room_participant'),
+      token:
+        authToken || (interviewId ? async () => fetchCollabToken(interviewId) : 'room_participant'),
       onConnect: () => setSyncStatus('connected'),
       onDisconnect: () => setSyncStatus('disconnected'),
     });

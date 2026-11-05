@@ -21,3 +21,4 @@ Write-Host "Press Ctrl+C to stop the tunnel." -ForegroundColor Gray
 Write-Host ""
 
 cloudflared tunnel --url http://localhost:3000
+

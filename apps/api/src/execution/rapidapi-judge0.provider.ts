@@ -10,11 +10,9 @@ import { QuotaExceededException } from '../common/exceptions/quota-exceeded.exce
 @Injectable()
 export class RapidApiJudge0Provider implements ExecutionProvider {
   private readonly logger = new Logger(RapidApiJudge0Provider.name);
-  private readonly baseUrl =
-    process.env.RAPIDAPI_JUDGE0_URL || 'https://judge0-ce.p.rapidapi.com';
+  private readonly baseUrl = process.env.RAPIDAPI_JUDGE0_URL || 'https://judge0-ce.p.rapidapi.com';
   private readonly rapidApiKey = process.env.RAPIDAPI_KEY || '';
-  private readonly rapidApiHost =
-    process.env.RAPIDAPI_HOST || 'judge0-ce.p.rapidapi.com';
+  private readonly rapidApiHost = process.env.RAPIDAPI_HOST || 'judge0-ce.p.rapidapi.com';
 
   async submit(input: ExecutionSubmissionInput): Promise<ExecutionSubmissionResult> {
     if (!this.rapidApiKey) {
@@ -47,15 +45,12 @@ export class RapidApiJudge0Provider implements ExecutionProvider {
     const timeout = setTimeout(() => controller.abort(), 15000);
 
     try {
-      const response = await fetch(
-        `${this.baseUrl}/submissions?base64_encoded=false&wait=true`,
-        {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        },
-      );
+      const response = await fetch(`${this.baseUrl}/submissions?base64_encoded=false&wait=true`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
 
       clearTimeout(timeout);
 
@@ -71,7 +66,11 @@ export class RapidApiJudge0Provider implements ExecutionProvider {
       if (!response.ok) {
         const errorText = await response.text();
         this.logger.error(`RapidAPI Judge0 returned HTTP ${response.status}: ${errorText}`);
-        if (response.status === 403 || errorText.toLowerCase().includes('quota') || errorText.toLowerCase().includes('exceeded')) {
+        if (
+          response.status === 403 ||
+          errorText.toLowerCase().includes('quota') ||
+          errorText.toLowerCase().includes('exceeded')
+        ) {
           throw new QuotaExceededException();
         }
         throw new BadGatewayException(`RapidAPI Judge0 execution failed: ${errorText}`);
@@ -97,8 +96,7 @@ export class RapidApiJudge0Provider implements ExecutionProvider {
       const trimmedStdout = stdout.trim();
       const trimmedExpected = input.expectedOutput?.trim();
       const passed =
-        statusId === 3 ||
-        (Boolean(trimmedExpected) && trimmedStdout === trimmedExpected);
+        statusId === 3 || (Boolean(trimmedExpected) && trimmedStdout === trimmedExpected);
 
       return {
         stdout,

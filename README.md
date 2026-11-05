@@ -55,20 +55,20 @@ Deployed entirely at **$0/month total cost** with no custom domain, no paid plan
 
 ## Tech Stack
 
-| Layer | Choice | Rationale |
-| :--- | :--- | :--- |
-| **Language** | TypeScript (Strict) | Strict typing across all packages; zero `any`. |
-| **Frontend** | Next.js 15, React 19, Tailwind CSS | First-party API rewrites, server components, dark carbon design system. |
-| **Editor** | Monaco Editor with `y-monaco` | High-fidelity code editing with real-time multi-cursor awareness. |
-| **Whiteboard** | `@excalidraw/excalidraw` + Yjs | MIT-licensed collaborative canvas with element-level `versionNonce` reconciliation. |
-| **Real-time Sync** | Yjs + Hocuspocus | CRDT document sync with full timestamped update logging for scrubber replay. |
-| **Media & Audio** | LiveKit Cloud + HTML5 MediaRecorder | Low-latency WebRTC for live room; browser-side audio mixing and chunked uploads. |
-| **Database** | PostgreSQL (Neon) with Prisma | Serverless connection pooling and declarative schema migrations on start. |
-| **Cache & Presence**| Redis (Upstash) | Managed TLS Redis with exponential backoff reconnect logic. |
-| **Code Execution** | Judge0 (RapidAPI & Docker) | Multi-language sandboxed code execution with daily quota tracking. |
-| **Storage** | Supabase Storage (S3 API) | Zero-cost S3-compatible cloud bucket for snapshots and chunked video streams. |
-| **Email** | Brevo HTTP API | Free transactional email without custom domain purchase. |
-| **Testing** | Vitest & Playwright | Unit, integration, and E2E test suites with mock execution providers. |
+| Layer                | Choice                              | Rationale                                                                           |
+| :------------------- | :---------------------------------- | :---------------------------------------------------------------------------------- |
+| **Language**         | TypeScript (Strict)                 | Strict typing across all packages; zero `any`.                                      |
+| **Frontend**         | Next.js 15, React 19, Tailwind CSS  | First-party API rewrites, server components, dark carbon design system.             |
+| **Editor**           | Monaco Editor with `y-monaco`       | High-fidelity code editing with real-time multi-cursor awareness.                   |
+| **Whiteboard**       | `@excalidraw/excalidraw` + Yjs      | MIT-licensed collaborative canvas with element-level `versionNonce` reconciliation. |
+| **Real-time Sync**   | Yjs + Hocuspocus                    | CRDT document sync with full timestamped update logging for scrubber replay.        |
+| **Media & Audio**    | LiveKit Cloud + HTML5 MediaRecorder | Low-latency WebRTC for live room; browser-side audio mixing and chunked uploads.    |
+| **Database**         | PostgreSQL (Neon) with Prisma       | Serverless connection pooling and declarative schema migrations on start.           |
+| **Cache & Presence** | Redis (Upstash)                     | Managed TLS Redis with exponential backoff reconnect logic.                         |
+| **Code Execution**   | Judge0 (RapidAPI & Docker)          | Multi-language sandboxed code execution with daily quota tracking.                  |
+| **Storage**          | Supabase Storage (S3 API)           | Zero-cost S3-compatible cloud bucket for snapshots and chunked video streams.       |
+| **Email**            | Brevo HTTP API                      | Free transactional email without custom domain purchase.                            |
+| **Testing**          | Vitest & Playwright                 | Unit, integration, and E2E test suites with mock execution providers.               |
 
 ---
 
@@ -77,16 +77,17 @@ Deployed entirely at **$0/month total cost** with no custom domain, no paid plan
 1. **Render Free Tier Cold Starts**:
    - Free instances on Render spin down into sleep mode after 15 minutes of inactivity.
    - Initial HTTP requests incur a 30–50 second cold start.
-   - Crucible includes an automatic `ServerWakeupBanner` that detects dormant backend services, displays a non-intrusive *"Waking up server..."* status to users, and polls `/health` until the API is warm.
+   - Crucible includes an automatic `ServerWakeupBanner` that detects dormant backend services, displays a non-intrusive _"Waking up server..."_ status to users, and polls `/health` until the API is warm.
    - Active WebSocket connections and heartbeats keep the collab server awake throughout active interviews.
 2. **RapidAPI Judge0 Execution Quota**:
    - The free plan enforces a hard limit of **50 submissions/day** (resets UTC 00:00).
    - Question banks are capped at 2 test cases per problem, allowing at least **25 complete runs per day**.
    - The UI surfaces remaining daily submissions directly in the code editor bar.
    - When the quota is reached (HTTP 429), a typed `QuotaExceededException` returns a clean message in the UI; code execution never fails silently.
-3. **Brevo Email Sender Verification & DMARC**:
-   - Brevo free tier permits 300 emails/day using a verified single sender email address.
-   - **Important Limitation:** If the verified sender is a freemail domain (such as `@gmail.com`), outgoing emails sent to recipient mail exchangers with strict DMARC `p=reject` policies may be rejected by the receiver's inbox provider. For local testing and complete transparency, password reset links and tokens are always logged to the application console output.
+3. **Brevo Email Sender Verification & DMARC Restrictions**:
+   - Brevo's free plan allows 300 emails/day and permits adding a personal email address (e.g. `@gmail.com`, `@yahoo.com`) as a **Verified Sender** via a one-click confirmation link sent to that inbox, without purchasing a custom domain.
+   - **Exact Delivery Limitation:** Major mailbox providers (Google, Yahoo, Microsoft) enforce strict DMARC alignment policies (`p=reject` / `p=quarantine`). When an email is relayed through Brevo's servers with a `From: yourname@gmail.com` header, the SPF and DKIM signatures do not match `gmail.com` DNS records. Consequently, receiving mail servers will **reject or place into spam** messages sent to external inboxes. Real-world delivery from a freemail sender is only accepted by servers without strict DMARC rejection or by the sender's own address.
+   - **Crucible Zero-Cost Fallback:** To ensure zero-cost deployments never block an interviewer due to mailbox DMARC rejections, Crucible's `AuthService` always logs the full password reset token and direct reset URL to the API server standard output (`[AuthService] Password reset token generated for <email>: <token>`). Interviewers can retrieve reset URLs directly from the Render service logs if needed.
 4. **Supabase Storage Free Quota**:
    - Supabase free tier provides 1 GB total storage and 50 MB max file size.
    - Browser recording bitrates are constrained to 500 kbps video + 64 kbps audio (~70 KB/s), uploading 10-second chunks (~700 KB). A full 60-minute interview recording consumes ~250 MB.
@@ -98,11 +99,13 @@ Deployed entirely at **$0/month total cost** with no custom domain, no paid plan
 Crucible can be run completely offline using Docker Compose.
 
 ### 1. Prerequisites
+
 - Node.js >= 22
 - pnpm >= 9
 - Docker and Docker Compose
 
 ### 2. Setup & Installation
+
 ```bash
 # Clone the repository
 git clone https://github.com/djaysharma007/Crucible.git
@@ -116,6 +119,7 @@ cp .env.example .env
 ```
 
 ### 3. Start Local Infrastructure
+
 ```bash
 # Start local Postgres, Redis, and MinIO (for local dev only)
 pnpm docker:up
@@ -129,12 +133,14 @@ pnpm --filter @crucible/api prisma:migrate:deploy
 ```
 
 ### 4. Seed Demo Data (Optional)
+
 ```bash
 # Populates sample questions, rubric, interviewer account, and a completed demo interview with replay history
 DEMO_INTERVIEWER_PASSWORD="DemoPassword123!" pnpm --filter @crucible/api db:seed
 ```
 
 ### 5. Run Development Services
+
 ```bash
 # In terminal 1: Start Web and API
 pnpm dev
@@ -142,13 +148,16 @@ pnpm dev
 # In terminal 2: Start Collab server
 pnpm dev:collab
 ```
+
 - Web: `http://localhost:3000`
 - API: `http://localhost:4000/api/v1`
 - Collab WebSocket: `ws://localhost:4001`
 - Login: `interviewer@crucible.dev` / `DemoPassword123!`
 
 ### 6. Remote Sharing with Cloudflare Quick Tunnel (Zero Cost)
+
 To test WebRTC video and collaborative coding with a candidate on another device without port forwarding:
+
 ```bash
 # Windows
 .\scripts\tunnel.ps1
@@ -156,6 +165,7 @@ To test WebRTC video and collaborative coding with a candidate on another device
 # macOS / Linux
 ./scripts/tunnel.sh
 ```
+
 This launches a free, temporary `*.trycloudflare.com` tunnel directing traffic to `http://localhost:3000`.
 
 ---

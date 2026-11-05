@@ -41,7 +41,8 @@ describe('Phase 6 Signals and Hardening Frontend Components', () => {
       );
 
       // Create a paste event with 80 characters
-      const sampleText = 'function binarySearch(arr, target) {\n  let left = 0;\n  let right = arr.length - 1;\n}';
+      const sampleText =
+        'function binarySearch(arr, target) {\n  let left = 0;\n  let right = arr.length - 1;\n}';
       const pasteEvent = new Event('paste') as ClipboardEvent;
       Object.defineProperty(pasteEvent, 'clipboardData', {
         value: {

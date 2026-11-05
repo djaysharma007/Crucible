@@ -28,7 +28,9 @@ export function useBrowserRecorder(interviewId: string) {
       setRecordedChunks(0);
 
       // 1. Setup Web Audio Context for audio mixing
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       const audioCtx = new AudioCtx();
       audioContextRef.current = audioCtx;
       const destNode = audioCtx.createMediaStreamDestination();
@@ -56,8 +58,7 @@ export function useBrowserRecorder(interviewId: string) {
       }
 
       // 2. Select Video Track: prefer screen share track if active, otherwise local camera
-      const videoTrack =
-        screenStream?.getVideoTracks()[0] || localStream?.getVideoTracks()[0];
+      const videoTrack = screenStream?.getVideoTracks()[0] || localStream?.getVideoTracks()[0];
 
       const tracks: MediaStreamTrack[] = [];
       if (videoTrack) {

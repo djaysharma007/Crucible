@@ -8,35 +8,53 @@ services:
     dockerContext: .
     plan: free
     region: oregon
-    branch: phase-7-free-deployment
+    branch: main
     healthCheckPath: /health
     envVars:
       - key: PORT
         value: 10000
       - key: NODE_ENV
         value: production
+
+      # Auto-generated internal cryptographic secrets (no user choice needed)
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ROOM_TOKEN_SECRET
+        generateValue: true
+      - key: COLLAB_TOKEN_SECRET
+        generateValue: true
+      - key: DEMO_INTERVIEWER_PASSWORD
+        generateValue: true
+
+      # Neon PostgreSQL (Free Tier)
+      # DATABASE_URL = Pooled endpoint (ends with -pooler.neon.tech)
+      # DIRECT_URL = Direct endpoint (does NOT contain -pooler)
       - key: DATABASE_URL
         sync: false
       - key: DIRECT_URL
         sync: false
+
+      # Upstash Redis (Free Tier)
       - key: REDIS_URL
         sync: false
-      - key: JWT_SECRET
-        sync: false
-      - key: COLLAB_TOKEN_SECRET
+
+      # LiveKit Cloud (Free Build Plan)
+      - key: LIVEKIT_URL
         sync: false
       - key: LIVEKIT_API_KEY
         sync: false
       - key: LIVEKIT_API_SECRET
         sync: false
-      - key: LIVEKIT_URL
-        sync: false
+
+      # Code Execution (RapidAPI Judge0 CE Free Plan)
       - key: EXECUTION_PROVIDER
         value: rapidapi
       - key: RAPIDAPI_KEY
         sync: false
       - key: RAPIDAPI_JUDGE0_HOST
         value: judge0-ce.p.rapidapi.com
+
+      # Storage (Supabase Storage S3-Compatible API - Free Tier)
       - key: SUPABASE_S3_ENDPOINT
         sync: false
       - key: SUPABASE_S3_REGION
@@ -47,13 +65,19 @@ services:
         sync: false
       - key: SUPABASE_S3_SECRET_KEY
         sync: false
+
+      # Transactional Email (Brevo Free Plan - Single Verified Sender)
       - key: BREVO_API_KEY
         sync: false
       - key: BREVO_SENDER_EMAIL
         sync: false
       - key: BREVO_SENDER_NAME
         value: Crucible
+
+      # Vercel Frontend URL & CORS (configured after Vercel deployment)
       - key: APP_URL
+        sync: false
+      - key: CORS_ORIGIN
         sync: false
 
   - type: web
@@ -63,14 +87,22 @@ services:
     dockerContext: .
     plan: free
     region: oregon
-    branch: phase-7-free-deployment
+    branch: main
     healthCheckPath: /health
     envVars:
       - key: PORT
         value: 10000
       - key: NODE_ENV
         value: production
+
+      # Inherited from crucible-api service
       - key: REDIS_URL
-        sync: false
+        fromService:
+          type: web
+          name: crucible-api
+          envVarKey: REDIS_URL
       - key: COLLAB_TOKEN_SECRET
-        sync: false
+        fromService:
+          type: web
+          name: crucible-api
+          envVarKey: COLLAB_TOKEN_SECRET

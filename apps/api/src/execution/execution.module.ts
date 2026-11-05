@@ -16,10 +16,7 @@ import { RapidApiJudge0Provider } from './rapidapi-judge0.provider.js';
     RapidApiJudge0Provider,
     {
       provide: EXECUTION_PROVIDER,
-      useFactory: (
-        selfHosted: SelfHostedJudge0Provider,
-        rapidApi: RapidApiJudge0Provider,
-      ) => {
+      useFactory: (selfHosted: SelfHostedJudge0Provider, rapidApi: RapidApiJudge0Provider) => {
         const providerName = (process.env.EXECUTION_PROVIDER || 'self_hosted').toLowerCase();
         if (providerName === 'rapidapi') {
           return rapidApi;

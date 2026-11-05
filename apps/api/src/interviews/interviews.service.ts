@@ -304,10 +304,7 @@ export class InterviewsService {
     const result = await this.prisma.interview.deleteMany({
       where: {
         status: { in: ['completed', 'cancelled'] },
-        OR: [
-          { endedAt: { lte: cutoff } },
-          { endedAt: null, createdAt: { lte: cutoff } },
-        ],
+        OR: [{ endedAt: { lte: cutoff } }, { endedAt: null, createdAt: { lte: cutoff } }],
       },
     });
 
@@ -411,7 +408,9 @@ export class InterviewsService {
       throw new NotFoundException(`Interview '${id}' not found`);
     }
 
-    const startTime = interview.startedAt ? interview.startedAt.getTime() : interview.createdAt.getTime();
+    const startTime = interview.startedAt
+      ? interview.startedAt.getTime()
+      : interview.createdAt.getTime();
     const endTime = interview.endedAt ? interview.endedAt.getTime() : Date.now();
     const durationSeconds = Math.max(0, Math.round((endTime - startTime) / 1000));
 
@@ -465,7 +464,9 @@ export class InterviewsService {
             interviewId: interview.scorecard.interviewId,
             recommendation: interview.scorecard.recommendation as Recommendation,
             summaryText: interview.scorecard.summaryText,
-            submittedAt: interview.scorecard.submittedAt ? interview.scorecard.submittedAt.toISOString() : null,
+            submittedAt: interview.scorecard.submittedAt
+              ? interview.scorecard.submittedAt.toISOString()
+              : null,
             createdAt: interview.scorecard.createdAt.toISOString(),
             updatedAt: interview.scorecard.updatedAt.toISOString(),
             ratings: interview.scorecard.ratings.map((r) => ({
@@ -522,7 +523,9 @@ export class InterviewsService {
     for (const q of detail.questions) {
       for (const cr of q.codeRuns) {
         const runTime = new Date(cr.requestedAt).getTime();
-        const baseTime = detail.startedAt ? new Date(detail.startedAt).getTime() : new Date(detail.createdAt).getTime();
+        const baseTime = detail.startedAt
+          ? new Date(detail.startedAt).getTime()
+          : new Date(detail.createdAt).getTime();
         const offsetMs = Math.max(0, runTime - baseTime);
         events.push({
           id: `coderun-${cr.id}`,
@@ -586,7 +589,16 @@ export class InterviewsService {
     ]);
 
     // Build unified criteria comparison
-    const criteriaMap = new Map<string, { criterionId: string; name: string; weight: number; ratingA: number | null; ratingB: number | null }>();
+    const criteriaMap = new Map<
+      string,
+      {
+        criterionId: string;
+        name: string;
+        weight: number;
+        ratingA: number | null;
+        ratingB: number | null;
+      }
+    >();
 
     if (detailA.scorecard) {
       for (const r of detailA.scorecard.ratings) {

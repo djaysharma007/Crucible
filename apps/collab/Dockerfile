@@ -41,3 +41,4 @@ EXPOSE 10000
 WORKDIR /app/apps/collab
 
 CMD ["node", "dist/index.js"]
+

@@ -78,8 +78,7 @@ export class SelfHostedJudge0Provider implements ExecutionProvider {
       const trimmedStdout = stdout.trim();
       const trimmedExpected = input.expectedOutput?.trim();
       const passed =
-        statusId === 3 ||
-        (Boolean(trimmedExpected) && trimmedStdout === trimmedExpected);
+        statusId === 3 || (Boolean(trimmedExpected) && trimmedStdout === trimmedExpected);
 
       return {
         stdout,
@@ -96,7 +95,9 @@ export class SelfHostedJudge0Provider implements ExecutionProvider {
       if (err instanceof QuotaExceededException || err instanceof BadGatewayException) {
         throw err;
       }
-      this.logger.error(`Failed to connect to self-hosted Judge0 at ${this.judge0Url}: ${(err as Error).message}`);
+      this.logger.error(
+        `Failed to connect to self-hosted Judge0 at ${this.judge0Url}: ${(err as Error).message}`,
+      );
       throw new BadGatewayException(
         `Unable to reach local Judge0 execution server at ${this.judge0Url}. Ensure docker-compose.judge0.yml is running.`,
       );

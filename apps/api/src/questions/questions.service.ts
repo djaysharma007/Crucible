@@ -235,7 +235,9 @@ export class QuestionsService {
       rawQuestion = (input as { question: unknown }).question;
     }
 
-    const parseResult = (await import('@crucible/shared')).CreateQuestionSchema.safeParse(rawQuestion);
+    const parseResult = (await import('@crucible/shared')).CreateQuestionSchema.safeParse(
+      rawQuestion,
+    );
     if (!parseResult.success) {
       throw new BadRequestException(
         `Invalid question import payload: ${parseResult.error.errors[0]?.message}`,
