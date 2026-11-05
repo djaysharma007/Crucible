@@ -23,8 +23,14 @@ services:
         generateValue: true
       - key: COLLAB_TOKEN_SECRET
         generateValue: true
+
+      # Demo Interviewer Password (user chosen for demo login)
       - key: DEMO_INTERVIEWER_PASSWORD
-        generateValue: true
+        sync: false
+
+      # Password Reset Token Logging (Default false; enable only for live demo on Render)
+      - key: LOG_PASSWORD_RESET_LINKS
+        value: "false"
 
       # Neon PostgreSQL (Free Tier)
       # DATABASE_URL = Pooled endpoint (ends with -pooler.neon.tech)
