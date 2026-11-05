@@ -1,14 +1,17 @@
 import {
   Controller,
   Post,
+  Get,
   Param,
   Body,
   Req,
+  Res,
   BadRequestException,
   ForbiddenException,
+  NotFoundException,
   Inject,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { AuthService } from '../auth/auth.service.js';
 import { StorageService } from './storage.service.js';
 import { RedisService } from '../redis/redis.service.js';
@@ -102,5 +105,59 @@ export class StorageController {
       recordingUrl,
       interviewId: id,
     };
+  }
+
+  @Get(':id/recording/chunks')
+  async listRecordingChunks(@Param('id') id: string) {
+    const chunkKeys = await this.redis.sMembers(`recording:chunks:${id}`);
+
+    const finalizeSignal = await this.prisma.signal.findFirst({
+      where: { interviewId: id, type: 'recording_finalized' },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const metadata = (finalizeSignal?.metadata as Record<string, unknown>) || {};
+    const totalChunks = (metadata['totalChunks'] as number) || chunkKeys.length;
+
+    const chunks = chunkKeys
+      .map((key) => {
+        const match = key.match(/chunk_(\d+)\.webm$/);
+        const chunkIndex = match ? parseInt(match[1], 10) : 0;
+        return {
+          chunkIndex,
+          key,
+          url: this.storageService.getPublicUrl(key),
+          streamUrl: `/api/v1/rooms/${id}/recording/chunks/${chunkIndex}`,
+        };
+      })
+      .sort((a, b) => a.chunkIndex - b.chunkIndex);
+
+    return {
+      interviewId: id,
+      totalChunks,
+      isFinalized: Boolean(finalizeSignal),
+      chunks,
+    };
+  }
+
+  @Get(':id/recording/chunks/:chunkIndex')
+  async getRecordingChunk(
+    @Param('id') id: string,
+    @Param('chunkIndex') chunkIndex: string,
+    @Res() res: Response,
+  ) {
+    const indexNum = parseInt(chunkIndex, 10);
+    const indexStr = isNaN(indexNum) ? chunkIndex : indexNum.toString().padStart(5, '0');
+    const key = `recordings/${id}/chunk_${indexStr}.webm`;
+
+    const obj = await this.storageService.getObject(key);
+    if (!obj) {
+      throw new NotFoundException(`Recording chunk ${chunkIndex} for interview ${id} not found`);
+    }
+
+    res.setHeader('Content-Type', obj.contentType);
+    res.setHeader('Content-Length', obj.data.length);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.send(obj.data);
   }
 }

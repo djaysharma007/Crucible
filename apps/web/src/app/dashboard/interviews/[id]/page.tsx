@@ -32,6 +32,7 @@ import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
 import { InterviewDetailResponse, ReplayTimelineResponse, Recommendation } from '@crucible/shared';
 import { TimelineScrubber } from '@/components/replay/TimelineScrubber';
+import { RecordingPlayer } from '@/components/dashboard/RecordingPlayer';
 
 type DetailTab = 'summary' | 'code' | 'whiteboard' | 'notes' | 'scorecard' | 'replay';
 
@@ -559,6 +560,9 @@ export default function InterviewDetailPage() {
                     onSpeedChange={setPlaybackSpeed}
                     events={replay.events}
                   />
+
+                  {/* Assembled Continuous Video Recording Player */}
+                  <RecordingPlayer interviewId={detail.id} />
 
                   {/* Reconstructed Replay Workspace */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class StorageService {
@@ -7,6 +7,7 @@ export class StorageService {
   private readonly s3Client: S3Client | null = null;
   private readonly bucket: string;
   private readonly endpoint: string;
+  private readonly simulatedStore = new Map<string, { body: Buffer; contentType: string }>();
 
   constructor() {
     this.endpoint =
@@ -76,11 +77,40 @@ export class StorageService {
         }),
       );
     } else {
+      this.simulatedStore.set(key, { body: Buffer.from(body), contentType });
       this.logger.log(`[Storage Simulation] Stored object ${key} (${size} bytes, ${contentType})`);
     }
 
     const url = this.getPublicUrl(key);
     return { key, url, size };
+  }
+
+  async getObject(key: string): Promise<{ data: Buffer; contentType: string } | null> {
+    if (this.s3Client) {
+      try {
+        const res = await this.s3Client.send(
+          new GetObjectCommand({
+            Bucket: this.bucket,
+            Key: key,
+          }),
+        );
+        if (!res.Body) return null;
+        const bytes = await res.Body.transformToByteArray();
+        return {
+          data: Buffer.from(bytes),
+          contentType: res.ContentType || 'video/webm',
+        };
+      } catch (err) {
+        this.logger.warn(`Failed to fetch object ${key} from S3: ${(err as Error).message}`);
+        return null;
+      }
+    }
+
+    const sim = this.simulatedStore.get(key);
+    if (sim) {
+      return { data: sim.body, contentType: sim.contentType };
+    }
+    return null;
   }
 
   getPublicUrl(key: string): string {

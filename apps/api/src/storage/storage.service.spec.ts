@@ -31,5 +31,15 @@ describe('StorageService', () => {
     expect(result.key).toBe('recordings/test/chunk_00000.webm');
     expect(result.size).toBe(buffer.length);
     expect(result.url).toBe('/storage/crucible-recordings/recordings/test/chunk_00000.webm');
+
+    // Verify getObject retrieves the stored buffer
+    const fetched = await storage.getObject('recordings/test/chunk_00000.webm');
+    expect(fetched).not.toBeNull();
+    expect(fetched?.data.toString()).toBe('test video chunk bytes');
+    expect(fetched?.contentType).toBe('video/webm');
+
+    // Verify non-existent object returns null
+    const missing = await storage.getObject('recordings/test/missing.webm');
+    expect(missing).toBeNull();
   });
 });
