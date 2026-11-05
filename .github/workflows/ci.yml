@@ -73,6 +73,9 @@ jobs:
           pnpm --filter @crucible/api prisma:generate
           pnpm --filter @crucible/api prisma:migrate:deploy
 
+      - name: Build shared package
+        run: pnpm --filter @crucible/shared build
+
       - name: Run linter
         run: pnpm lint
 
