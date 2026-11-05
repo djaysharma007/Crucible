@@ -51,7 +51,7 @@ services:
         value: rapidapi
       - key: RAPIDAPI_KEY
         sync: false
-      - key: RAPIDAPI_JUDGE0_HOST
+      - key: RAPIDAPI_HOST
         value: judge0-ce.p.rapidapi.com
 
       # Storage (Supabase Storage S3-Compatible API - Free Tier)
@@ -106,3 +106,13 @@ services:
           type: web
           name: crucible-api
           envVarKey: COLLAB_TOKEN_SECRET
+      - key: SESSION_SECRET
+        fromService:
+          type: web
+          name: crucible-api
+          envVarKey: SESSION_SECRET
+      - key: ROOM_TOKEN_SECRET
+        fromService:
+          type: web
+          name: crucible-api
+          envVarKey: ROOM_TOKEN_SECRET

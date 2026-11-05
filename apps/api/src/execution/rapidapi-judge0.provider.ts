@@ -12,7 +12,10 @@ export class RapidApiJudge0Provider implements ExecutionProvider {
   private readonly logger = new Logger(RapidApiJudge0Provider.name);
   private readonly baseUrl = process.env.RAPIDAPI_JUDGE0_URL || 'https://judge0-ce.p.rapidapi.com';
   private readonly rapidApiKey = process.env.RAPIDAPI_KEY || '';
-  private readonly rapidApiHost = process.env.RAPIDAPI_HOST || 'judge0-ce.p.rapidapi.com';
+  private readonly rapidApiHost =
+    process.env.RAPIDAPI_HOST ||
+    process.env.RAPIDAPI_JUDGE0_HOST ||
+    'judge0-ce.p.rapidapi.com';
 
   async submit(input: ExecutionSubmissionInput): Promise<ExecutionSubmissionResult> {
     if (!this.rapidApiKey) {
